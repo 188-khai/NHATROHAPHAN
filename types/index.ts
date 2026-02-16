@@ -1,0 +1,61 @@
+export type RoomStatus = 'available' | 'rented' | 'maintenance';
+
+export interface Room {
+    id: string; // e.g., '101'
+    roomNumber: string;
+    price: number;
+    status: RoomStatus;
+    tenantIds: string[]; // Linked tenants
+}
+
+export interface Tenant {
+    id: string;
+    name: string;
+    phone: string;
+    startDate: string; // ISO date string
+    deposit: number;
+    roomId: string; // Keep referencing room for reverse lookup if needed
+    identityCardImage?: string; // Base64 string
+}
+
+export interface Bill {
+    id: string;
+    roomId: string;
+    date: string; // ISO date string for billing period
+    electricityOld: number;
+    electricityNew: number;
+    waterOld?: number; // Not used for cost now
+    waterNew?: number; // Not used for cost now
+    electricityRate: number; // 3500
+    waterRate: number; // 30000 per person
+    garbageFee: number; // 20000
+    totalAmount: number;
+    isPaid: boolean;
+}
+
+export type AssetStatus = 'new' | 'good' | 'maintenance' | 'broken';
+export type AssetType = 'sofa' | 'ac' | 'cupboard' | 'bed' | 'mattress' | 'general';
+export type SofaMaterial = 'leather' | 'velvet' | 'fabric';
+
+export interface Asset {
+    id: string;
+    roomId: string;
+    name: string;
+    type: AssetType;
+    installDate: string;
+    lastMaintenanceDate?: string;
+    status: AssetStatus;
+    cost?: number;
+    specifications?: {
+        material?: SofaMaterial;
+        color?: string;
+        technicalNotes?: string;
+    };
+    maintenanceIntervalMonths?: number;
+    image?: string; // Base64 string for asset image
+    history?: {
+        date: string;
+        action: 'check-in' | 'check-out' | 'maintenance' | 'issue';
+        note?: string;
+    }[];
+}
