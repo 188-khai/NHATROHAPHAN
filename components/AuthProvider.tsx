@@ -37,14 +37,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const {
                 data: { session },
                 error,
-            } = await supabase.auth.getSession();
+            } = await supabase!.auth.getSession();
             if (error) throw error;
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
         };
 
-        const { data: listener } = supabase.auth.onAuthStateChange(
+        const { data: listener } = supabase!.auth.onAuthStateChange(
             (_event, session) => {
                 setSession(session);
                 setUser(session?.user ?? null);
