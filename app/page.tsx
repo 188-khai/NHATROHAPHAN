@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { initialRooms, initialAssets } from '@/utils/seedData';
 import { Room, Tenant, Bill, Asset } from '@/types';
 import DashboardStats from '@/components/DashboardStats';
@@ -11,12 +11,15 @@ import RoomDetailModal from '@/components/RoomDetailModal';
 import FinancialOverview from '@/components/FinancialOverview';
 import BatchBillingModal from '@/components/BatchBillingModal';
 import ElectricityReconciliationModal from '@/components/ElectricityReconciliationModal';
+import DataMigrationModal from '@/components/DataMigrationModal';
 
 export default function Home() {
-  const [rooms, setRooms] = useLocalStorage<Room[]>('rooms', initialRooms);
-  const [tenants, setTenants] = useLocalStorage<Tenant[]>('tenants', []);
-  const [bills, setBills] = useLocalStorage<Bill[]>('bills', []);
-  const [assets, setAssets] = useLocalStorage<Asset[]>('assets', initialAssets);
+  const {
+    rooms, tenants, bills, assets, loading,
+    saveRoom, saveTenant, deleteTenant,
+    saveBill, saveBills, deleteBill,
+    saveAsset, deleteAsset
+  } = useSupabaseData(); // Use Supabase Hook
 
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,59 +27,72 @@ export default function Home() {
   const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
   const [activeView, setActiveView] = useState<'rooms' | 'tenants'>('rooms');
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-500 font-medium">Đang đồng bộ dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleRoomClick = (room: Room) => {
     setSelectedRoom(room);
     setIsModalOpen(true);
   };
 
-  const handleUpdateRoom = (updatedRoom: Room) => {
-    setRooms(rooms.map((r) => (r.id === updatedRoom.id ? updatedRoom : r)));
+  const handleUpdateRoom = async (updatedRoom: Room) => {
+    await saveRoom(updatedRoom);
     setSelectedRoom(updatedRoom);
   };
 
-  const handleUpdateTenant = (updatedTenant: Tenant) => {
-    // In new logic, we mostly just modify the tenant in the list
-    setTenants(prev => prev.map(t => t.id === updatedTenant.id ? updatedTenant : t));
+  const handleUpdateTenant = async (updatedTenant: Tenant) => {
+    await saveTenant(updatedTenant);
   };
 
-  const handleAddTenant = (newTenant: Tenant) => {
-    setTenants([...tenants, newTenant]);
+  const handleAddTenant = async (newTenant: Tenant) => {
+    await saveTenant(newTenant);
     // Update room to include this tenant
     const room = rooms.find(r => r.id === newTenant.roomId);
     if (room) {
-      const currentTenantIds = room.tenantIds || []; // Defensive
+      const currentTenantIds = room.tenantIds || [];
       const updatedTenantIds = [...currentTenantIds, newTenant.id];
-      handleUpdateRoom({ ...room, tenantIds: updatedTenantIds });
+      await saveRoom({ ...room, tenantIds: updatedTenantIds });
     }
   };
 
-  const handleRemoveTenant = (tenantId: string) => {
-    setTenants(tenants.filter(t => t.id !== tenantId));
+  const handleRemoveTenant = async (tenantId: string) => {
+    await deleteTenant(tenantId);
     // Remove from room
     const room = rooms.find(r => r.tenantIds.includes(tenantId));
     if (room) {
       const updatedTenantIds = room.tenantIds.filter(id => id !== tenantId);
-      handleUpdateRoom({ ...room, tenantIds: updatedTenantIds });
+      await saveRoom({ ...room, tenantIds: updatedTenantIds });
     }
   };
 
-  const handleSaveBill = (newBill: Bill) => {
-    setBills([...bills, newBill]);
+  const handleSaveBill = async (newBill: Bill) => {
+    await saveBill(newBill);
   };
 
-  const handleBatchSaveBills = (newBills: Bill[]) => {
-    setBills([...bills, ...newBills]);
+  const handleBatchSaveBills = async (newBills: Bill[]) => {
+    await saveBills(newBills);
   };
 
-  const handleUpdateBill = (updatedBill: Bill) => {
-    setBills(bills.map((b) => (b.id === updatedBill.id ? updatedBill : b)));
+  const handleUpdateBill = async (updatedBill: Bill) => {
+    await saveBill(updatedBill);
   };
 
+  const handleDeleteBill = async (billId: string) => {
+    await deleteBill(billId);
+  };
+
+  // State for Editing Bill
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [targetBillToEdit, setTargetBillToEdit] = useState<Bill | null>(null);
-
-  const handleDeleteBill = (billId: string) => {
-    setBills(bills.filter((b) => b.id !== billId));
-  };
 
   const handleEditBillFromHistory = (bill: Bill) => {
     const room = rooms.find(r => r.id === bill.roomId);
@@ -89,29 +105,29 @@ export default function Home() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setTargetBillToEdit(null); // Reset target bill when closing
+    setTargetBillToEdit(null);
   };
 
   // Asset Handlers
-  const handleAddAsset = (newAsset: Asset) => {
-    setAssets([...assets, newAsset]);
+  const handleAddAsset = async (newAsset: Asset) => {
+    await saveAsset(newAsset);
   };
 
-  const handleUpdateAsset = (updatedAsset: Asset) => {
-    setAssets(assets.map(a => a.id === updatedAsset.id ? updatedAsset : a));
+  const handleUpdateAsset = async (updatedAsset: Asset) => {
+    await saveAsset(updatedAsset);
   };
 
-  const handleDeleteAsset = (assetId: string) => {
-    setAssets(assets.filter(a => a.id !== assetId));
+  const handleDeleteAsset = async (assetId: string) => {
+    await deleteAsset(assetId);
   };
 
   return (
     <main
-      className="min-h-screen p-2 sm:p-6 lg:p-8 bg-cover bg-center bg-fixed bg-no-repeat pb-20 sm:pb-6" // Reduced padding on mobile, added bottom padding for scrolling
+      className="min-h-screen p-2 sm:p-6 lg:p-8 bg-cover bg-center bg-fixed bg-no-repeat pb-20 sm:pb-6"
       style={{ backgroundImage: "url('/background.jpg')" }}
     >
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8 flex justify-between items-center">
+        <header className="mb-8 flex justify-between items-center bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm">
           <div>
             <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900">
               Quản Lý Nhà Trọ
@@ -120,7 +136,7 @@ export default function Home() {
               Hệ thống quản lý phòng trọ đơn giản & hiệu quả
             </p>
           </div>
-
+          {/* Logout Button (Ideally handled in a header component) */}
         </header>
 
         <DashboardStats rooms={rooms} />
@@ -276,6 +292,8 @@ export default function Home() {
           bills={bills}
           rooms={rooms}
         />
+
+        <DataMigrationModal />
       </div>
     </main>
   );
