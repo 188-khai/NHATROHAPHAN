@@ -118,10 +118,10 @@ export function useSupabaseData() {
             setLoading(true);
             try {
                 const [roomsRes, tenantsRes, billsRes, assetsRes] = await Promise.all([
-                    supabase.from("rooms").select("*"),
-                    supabase.from("tenants").select("*"),
-                    supabase.from("bills").select("*"),
-                    supabase.from("assets").select("*"),
+                    supabase!.from("rooms").select("*"),
+                    supabase!.from("tenants").select("*"),
+                    supabase!.from("bills").select("*"),
+                    supabase!.from("assets").select("*"),
                 ]);
 
                 if (roomsRes.data) setRooms(roomsRes.data.map(mapRoomFromDB));
@@ -138,7 +138,7 @@ export function useSupabaseData() {
         fetchData();
 
         // Realtime Subscription
-        const channel = supabase
+        const channel = supabase!
             .channel("db_changes")
             .on("postgres_changes", { event: "*", schema: "public" }, () => {
                 fetchData(); // Simplest strategy: re-fetch all on any change
@@ -146,7 +146,7 @@ export function useSupabaseData() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            supabase!.removeChannel(channel);
         };
     }, [user]);
 
