@@ -34,14 +34,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const setData = async () => {
-            const {
-                data: { session },
-                error,
-            } = await supabase!.auth.getSession();
-            if (error) throw error;
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
+            try {
+                const {
+                    data: { session },
+                    error,
+                } = await supabase!.auth.getSession();
+                if (error) {
+                    console.error("Auth error:", error);
+                    // Instead of crashing, just assume logged out
+                    setSession(null);
+                    setUser(null);
+                } else {
+                    setSession(session);
+                    setUser(session?.user ?? null);
+                }
+            } catch (err) {
+                console.error("Auth exception:", err);
+                setSession(null);
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
         };
 
         const { data: listener } = supabase!.auth.onAuthStateChange(
