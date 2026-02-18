@@ -114,8 +114,8 @@ export function useSupabaseData() {
     useEffect(() => {
         if (!user || !supabase) return;
 
-        const fetchData = async () => {
-            setLoading(true);
+        const fetchData = async (isInitial = false) => {
+            if (isInitial) setLoading(true);
             try {
                 if (!supabase) return;
                 const [roomsRes, tenantsRes, billsRes, assetsRes] = await Promise.all([
@@ -132,18 +132,18 @@ export function useSupabaseData() {
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
-                setLoading(false);
+                if (isInitial) setLoading(false);
             }
         };
 
-        fetchData();
+        fetchData(true);
 
         // Realtime Subscription
         if (!supabase) return;
         const channel = supabase
             .channel("db_changes")
             .on("postgres_changes", { event: "*", schema: "public" }, () => {
-                fetchData();
+                fetchData(false);
             })
             .subscribe();
 
