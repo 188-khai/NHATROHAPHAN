@@ -12,6 +12,7 @@ import FinancialOverview from '@/components/FinancialOverview';
 import BatchBillingModal from '@/components/BatchBillingModal';
 import ElectricityReconciliationModal from '@/components/ElectricityReconciliationModal';
 import DataMigrationModal from '@/components/DataMigrationModal';
+import RevenueChart from '@/components/RevenueChart';
 
 export default function Home() {
   const {
@@ -173,6 +174,9 @@ export default function Home() {
         )}
 
         <DashboardStats rooms={rooms} />
+
+        {/* Revenue Chart */}
+        <RevenueChart bills={bills} />
 
         {/* Maintenance Alert Widget */}
         {assets.some(a => {
