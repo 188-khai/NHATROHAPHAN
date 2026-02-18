@@ -110,6 +110,17 @@ export function useSupabaseData() {
     const [assets, setAssets] = useState<Asset[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Helper to sort rooms numerically (e.g. "P.10" < "P.2")
+    const sortRooms = (roomsToSort: Room[]) => {
+        return [...roomsToSort].sort((a, b) => {
+            // Extract numbers from string "P.101" -> 101
+            const aNum = parseInt(a.roomNumber.replace(/\D/g, '')) || 0;
+            const bNum = parseInt(b.roomNumber.replace(/\D/g, '')) || 0;
+            if (aNum !== bNum) return aNum - bNum;
+            return a.roomNumber.localeCompare(b.roomNumber);
+        });
+    };
+
     // Initial Fetch
     useEffect(() => {
         if (!user || !supabase) return;
@@ -119,13 +130,16 @@ export function useSupabaseData() {
             try {
                 if (!supabase) return;
                 const [roomsRes, tenantsRes, billsRes, assetsRes] = await Promise.all([
-                    supabase.from("rooms").select("*"),
+                    supabase.from("rooms").select("*").order('room_number', { ascending: true }),
                     supabase.from("tenants").select("*"),
                     supabase.from("bills").select("*"),
                     supabase.from("assets").select("*"),
                 ]);
 
-                if (roomsRes.data) setRooms(roomsRes.data.map(mapRoomFromDB));
+                if (roomsRes.data) {
+                    const mappedRooms = roomsRes.data.map(mapRoomFromDB);
+                    setRooms(sortRooms(mappedRooms));
+                }
                 if (tenantsRes.data) setTenants(tenantsRes.data.map(mapTenantFromDB));
                 if (billsRes.data) setBills(billsRes.data.map(mapBillFromDB));
                 if (assetsRes.data) setAssets(assetsRes.data.map(mapAssetFromDB));
@@ -162,10 +176,10 @@ export function useSupabaseData() {
         if (exists) {
             await supabase.from("rooms").update(mapRoomToDB(room)).eq("id", room.id);
             // Optimistic update
-            setRooms(prev => prev.map(r => r.id === room.id ? room : r));
+            setRooms(prev => sortRooms(prev.map(r => r.id === room.id ? room : r)));
         } else {
             await supabase.from("rooms").insert(mapRoomToDB(room));
-            setRooms(prev => [...prev, room]);
+            setRooms(prev => sortRooms([...prev, room]));
         }
     };
 
