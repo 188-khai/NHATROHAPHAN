@@ -92,8 +92,8 @@ export default function RevenueChart({ bills }: RevenueChartProps) {
                             tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
                         />
                         <Tooltip
-                            formatter={(value: number | string | Array<number | string>) => [
-                                `${Number(value).toLocaleString('vi-VN')} đ`,
+                            formatter={(value: number | string | Array<number | string> | undefined) => [
+                                `${Number(value || 0).toLocaleString('vi-VN')} đ`,
                                 "Doanh thu"
                             ]}
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}

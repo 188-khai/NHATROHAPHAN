@@ -267,7 +267,9 @@ export default function RoomDetailModal({
             const canvas = await html2canvas(billRef.current, {
                 scale: 2, // Improved quality
                 useCORS: true,
-                backgroundColor: '#F9F7F2'
+                backgroundColor: '#F9F7F2',
+                windowWidth: billRef.current.scrollWidth,
+                windowHeight: billRef.current.scrollHeight
             });
 
             const imgData = canvas.toDataURL('image/png');
@@ -277,9 +279,9 @@ export default function RoomDetailModal({
 
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             pdf.save(`bill_room_${room.roomNumber}_${new Date().toISOString().split('T')[0]}.pdf`);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error exporting PDF:", error);
-            alert("Đã xảy ra lỗi khi xuất PDF.");
+            alert(`Lỗi xuất PDF: ${error.message || error}`);
         }
     };
 
@@ -290,12 +292,14 @@ export default function RoomDetailModal({
             const canvas = await html2canvas(billRef.current, {
                 scale: 2,
                 useCORS: true,
-                backgroundColor: '#F9F7F2'
+                backgroundColor: '#F9F7F2',
+                windowWidth: billRef.current.scrollWidth,
+                windowHeight: billRef.current.scrollHeight
             });
 
             canvas.toBlob(async (blob) => {
                 if (!blob) {
-                    alert('Lỗi tạo ảnh hóa đơn.');
+                    alert('Lỗi tạo ảnh hóa đơn (Blob is null).');
                     return;
                 }
                 try {
@@ -318,9 +322,9 @@ export default function RoomDetailModal({
                 }
             }, 'image/png');
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error sending Zalo:", error);
-            alert("Đã xảy ra lỗi khi xử lý hình ảnh.");
+            alert(`Lỗi xử lý hình ảnh: ${error.message || error}`);
         }
     };
 
@@ -710,7 +714,7 @@ export default function RoomDetailModal({
             {/* Hidden Invoice Template for PDF Generation */}
             {
                 calculatedBill && (
-                    <div className="fixed top-[-10000px] left-[-10000px]">
+                    <div className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none">
                         <div ref={billRef} className="w-[210mm] min-h-[297mm] bg-[#F9F7F2] text-[#124E57] p-12 box-border font-serif">
                             {/* Header */}
                             <div className="flex justify-between items-start mb-12">
