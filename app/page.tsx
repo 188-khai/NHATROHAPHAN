@@ -52,7 +52,9 @@ export default function Home() {
     if (room) {
       const currentTenantIds = room.tenantIds || [];
       const updatedTenantIds = [...currentTenantIds, newTenant.id];
-      await saveRoom({ ...room, tenantIds: updatedTenantIds });
+      // Auto-update status to 'rented' if it was 'available'
+      const newStatus = room.status === 'available' ? 'rented' : room.status;
+      await saveRoom({ ...room, tenantIds: updatedTenantIds, status: newStatus });
     }
   };
 
@@ -62,7 +64,9 @@ export default function Home() {
     const room = rooms.find(r => r.tenantIds.includes(tenantId));
     if (room) {
       const updatedTenantIds = room.tenantIds.filter(id => id !== tenantId);
-      await saveRoom({ ...room, tenantIds: updatedTenantIds });
+      // Auto-update status to 'available' if no tenants left
+      const newStatus = updatedTenantIds.length === 0 ? 'available' : room.status;
+      await saveRoom({ ...room, tenantIds: updatedTenantIds, status: newStatus });
     }
   };
 

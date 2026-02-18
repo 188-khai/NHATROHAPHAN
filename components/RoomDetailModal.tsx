@@ -157,10 +157,7 @@ export default function RoomDetailModal({
             });
             if (fileInputRef.current) fileInputRef.current.value = '';
 
-            // Update room status if needed
-            if (room.status === 'available') {
-                onUpdateRoom({ ...room, status: 'rented' });
-            }
+            // Room status update is now handled in parent component (app/page.tsx)
         }
     };
 
