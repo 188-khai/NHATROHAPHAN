@@ -178,44 +178,47 @@ export default function RoomDetailModal({
         setCalculatedBill(result);
     };
 
+    // Helper to construct bill object
+    const getBillPayload = (): Bill => {
+        if (editingBill) {
+            return {
+                ...editingBill,
+                electricityOld,
+                electricityNew,
+                waterOld,
+                waterNew,
+                totalAmount: calculatedBill.totalAmount,
+            };
+        } else {
+            return {
+                id: crypto.randomUUID(),
+                roomId: room!.id,
+                date: new Date().toISOString(),
+                electricityOld,
+                electricityNew,
+                waterOld,
+                waterNew,
+                electricityRate: 3500,
+                waterRate: 30000,
+                garbageFee: 20000,
+                totalAmount: calculatedBill.totalAmount,
+                isPaid: false
+            };
+        }
+    };
+
     const handleConfirmBill = () => {
         if (calculatedBill && room) {
+            const bill = getBillPayload();
             if (editingBill) {
-                // Update existing bill
-                const updatedBill: Bill = {
-                    ...editingBill,
-                    electricityOld,
-                    electricityNew,
-                    waterOld,
-                    waterNew,
-                    totalAmount: calculatedBill.totalAmount,
-                    // Re-calculate dates or keep original date? Keeping original date for now or updating to current?
-                    // Usually edit fixes a mistake, so maybe keep original date. 
-                    // But if it's a "re-issue" maybe new date. Let's keep original date for "correction" semantics.
-                };
-                onUpdateBill(updatedBill);
+                onUpdateBill(bill);
                 setEditingBill(null);
-                setCalculatedBill(null); // Clear calculation view
                 alert("Đã cập nhật hóa đơn thành công!");
             } else {
-                // Create new bill
-                const newBill: Bill = {
-                    id: crypto.randomUUID(),
-                    roomId: room.id,
-                    date: new Date().toISOString(),
-                    electricityOld,
-                    electricityNew,
-                    waterOld,
-                    waterNew,
-                    electricityRate: 3500,
-                    waterRate: 30000,
-                    garbageFee: 20000,
-                    totalAmount: calculatedBill.totalAmount,
-                    isPaid: false
-                };
-                onSaveBill(newBill);
-                onClose();
+                onSaveBill(bill);
             }
+            setCalculatedBill(null);
+            onClose();
         }
     }
 
@@ -260,6 +263,27 @@ export default function RoomDetailModal({
     const handleExportPDF = async () => {
         if (!calculatedBill || !room || !billRef.current) return;
 
+        // Auto-save if not already saved (or update if editing)
+        // We do this silently or with a notification
+        const bill = getBillPayload();
+        if (editingBill) {
+            onUpdateBill(bill);
+        } else {
+            // Check if this specific calculation is already saved? 
+            // Hard to know for sure without ID, but for new bills, we just save it.
+            // To prevent duplicates if they click export multiple times, we could check properties,
+            // but for now, let's assume "Export" means "Save & Export".
+            onSaveBill(bill);
+        }
+
+        // We don't close the modal, so user can continue if they want.
+        // But we should probably switch to "edit mode" for the newly saved bill to prevent duplicate saves?
+        // Actually, let's just save. If they click again, they might create another bill if we don't update state.
+        // Ideally, we sets `editingBill` to this new bill.
+        if (!editingBill) {
+            setEditingBill(bill);
+        }
+
         try {
             const canvas = await html2canvas(billRef.current, {
                 scale: 2, // Improved quality
@@ -284,6 +308,17 @@ export default function RoomDetailModal({
 
     const handleSendZalo = async () => {
         if (!calculatedBill || !room || !billRef.current) return;
+
+        // Auto-save logic
+        const bill = getBillPayload();
+        if (editingBill) {
+            onUpdateBill(bill);
+        } else {
+            onSaveBill(bill);
+            if (!editingBill) {
+                setEditingBill(bill);
+            }
+        }
 
         try {
             const canvas = await html2canvas(billRef.current, {
@@ -311,7 +346,7 @@ export default function RoomDetailModal({
                     const zaloUrl = phone ? `https://zalo.me/${phone}` : 'https://zalo.me';
 
                     window.open(zaloUrl, '_blank');
-                    alert('Đã copy ảnh hóa đơn! Hãy nhấn Ctrl+V (hoặc Paste) vào ô chat Zalo để gửi.');
+                    alert('Đã lưu hóa đơn và copy ảnh! Hãy nhấn Ctrl+V vào Zalo để gửi.');
 
                 } catch (err) {
                     console.error('Failed to copy: ', err);
