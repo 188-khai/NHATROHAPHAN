@@ -117,11 +117,12 @@ export function useSupabaseData() {
         const fetchData = async () => {
             setLoading(true);
             try {
+                if (!supabase) return;
                 const [roomsRes, tenantsRes, billsRes, assetsRes] = await Promise.all([
-                    supabase!.from("rooms").select("*"),
-                    supabase!.from("tenants").select("*"),
-                    supabase!.from("bills").select("*"),
-                    supabase!.from("assets").select("*"),
+                    supabase.from("rooms").select("*"),
+                    supabase.from("tenants").select("*"),
+                    supabase.from("bills").select("*"),
+                    supabase.from("assets").select("*"),
                 ]);
 
                 if (roomsRes.data) setRooms(roomsRes.data.map(mapRoomFromDB));
@@ -138,15 +139,16 @@ export function useSupabaseData() {
         fetchData();
 
         // Realtime Subscription
-        const channel = supabase!
+        if (!supabase) return;
+        const channel = supabase
             .channel("db_changes")
             .on("postgres_changes", { event: "*", schema: "public" }, () => {
-                fetchData(); // Simplest strategy: re-fetch all on any change
+                fetchData();
             })
             .subscribe();
 
         return () => {
-            supabase!.removeChannel(channel);
+            if (supabase) supabase.removeChannel(channel);
         };
     }, [user]);
 
@@ -154,80 +156,89 @@ export function useSupabaseData() {
 
     // --- Rooms ---
     const saveRoom = async (room: Room) => {
+        if (!supabase) return;
         // Check if exists
         const exists = rooms.some(r => r.id === room.id);
         if (exists) {
-            await supabase?.from("rooms").update(mapRoomToDB(room)).eq("id", room.id);
+            await supabase.from("rooms").update(mapRoomToDB(room)).eq("id", room.id);
             // Optimistic update
             setRooms(prev => prev.map(r => r.id === room.id ? room : r));
         } else {
-            await supabase?.from("rooms").insert(mapRoomToDB(room));
+            await supabase.from("rooms").insert(mapRoomToDB(room));
             setRooms(prev => [...prev, room]);
         }
     };
 
     const deleteRoom = async (id: string) => {
-        await supabase?.from("rooms").delete().eq("id", id);
+        if (!supabase) return;
+        await supabase.from("rooms").delete().eq("id", id);
         setRooms(prev => prev.filter(r => r.id !== id));
     };
 
     // --- Tenants ---
     const saveTenant = async (tenant: Tenant) => {
+        if (!supabase) return;
         const exists = tenants.some(t => t.id === tenant.id);
         if (exists) {
-            await supabase?.from("tenants").update(mapTenantToDB(tenant)).eq("id", tenant.id);
+            await supabase.from("tenants").update(mapTenantToDB(tenant)).eq("id", tenant.id);
             setTenants(prev => prev.map(t => t.id === tenant.id ? tenant : t));
         } else {
-            await supabase?.from("tenants").insert(mapTenantToDB(tenant));
+            await supabase.from("tenants").insert(mapTenantToDB(tenant));
             setTenants(prev => [...prev, tenant]);
         }
     };
 
     const deleteTenant = async (id: string) => {
-        await supabase?.from("tenants").delete().eq("id", id);
+        if (!supabase) return;
+        await supabase.from("tenants").delete().eq("id", id);
         setTenants(prev => prev.filter(t => t.id !== id));
     };
 
     // --- Bills ---
     const saveBill = async (bill: Bill) => {
+        if (!supabase) return;
         const exists = bills.some(b => b.id === bill.id);
         if (exists) {
-            await supabase?.from("bills").update(mapBillToDB(bill)).eq("id", bill.id);
+            await supabase.from("bills").update(mapBillToDB(bill)).eq("id", bill.id);
             setBills(prev => prev.map(b => b.id === bill.id ? bill : b));
         } else {
-            await supabase?.from("bills").insert(mapBillToDB(bill));
+            await supabase.from("bills").insert(mapBillToDB(bill));
             setBills(prev => [...prev, bill]);
         }
     };
 
     const saveBills = async (newBills: Bill[]) => {
+        if (!supabase) return;
         if (newBills.length === 0) return;
         const dbBills = newBills.map(mapBillToDB);
-        await supabase?.from("bills").insert(dbBills);
+        await supabase.from("bills").insert(dbBills);
         // Fetches fresh to ensure sync
-        const { data } = await supabase!.from("bills").select("*");
+        const { data } = await supabase.from("bills").select("*");
         if (data) setBills(data.map(mapBillFromDB));
     };
 
     const deleteBill = async (id: string) => {
-        await supabase?.from("bills").delete().eq("id", id);
+        if (!supabase) return;
+        await supabase.from("bills").delete().eq("id", id);
         setBills(prev => prev.filter(b => b.id !== id));
     };
 
     // --- Assets ---
     const saveAsset = async (asset: Asset) => {
+        if (!supabase) return;
         const exists = assets.some(a => a.id === asset.id);
         if (exists) {
-            await supabase?.from("assets").update(mapAssetToDB(asset)).eq("id", asset.id);
+            await supabase.from("assets").update(mapAssetToDB(asset)).eq("id", asset.id);
             setAssets(prev => prev.map(a => a.id === asset.id ? asset : a));
         } else {
-            await supabase?.from("assets").insert(mapAssetToDB(asset));
+            await supabase.from("assets").insert(mapAssetToDB(asset));
             setAssets(prev => [...prev, asset]);
         }
     };
 
     const deleteAsset = async (id: string) => {
-        await supabase?.from("assets").delete().eq("id", id);
+        if (!supabase) return;
+        await supabase.from("assets").delete().eq("id", id);
         setAssets(prev => prev.filter(a => a.id !== id));
     };
 
