@@ -142,6 +142,36 @@ export default function Home() {
           {/* Logout Button (Ideally handled in a header component) */}
         </header>
 
+        {rooms.length === 0 && !loading && (
+          <div className="bg-white rounded-xl p-8 mb-8 text-center shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Chưa có dữ liệu phòng trọ</h2>
+            <p className="text-gray-500 mb-6">
+              Bạn đang sử dụng phiên bản mới trên đám mây. Dữ liệu cũ ở máy tính (localhost) không tự chuyển sang đây được.
+              <br />
+              Hãy bấm nút dưới đây để tạo nhanh dữ liệu mẫu (20 phòng) để dùng thử ngay.
+            </p>
+            <button
+              onClick={async () => {
+                const confirm = window.confirm("Bạn có chắc chắn muốn tạo dữ liệu mẫu không?");
+                if (!confirm) return;
+
+                // Batch insert rooms
+                for (const room of initialRooms) {
+                  await saveRoom(room);
+                }
+                // Batch insert assets
+                for (const asset of initialAssets) {
+                  await saveAsset(asset);
+                }
+                window.location.reload();
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-transform transform hover:scale-105"
+            >
+              🚀 Tạo Dữ Liệu Mẫu (20 Phòng)
+            </button>
+          </div>
+        )}
+
         <DashboardStats rooms={rooms} />
 
         {/* Maintenance Alert Widget */}
