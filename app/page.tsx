@@ -28,16 +28,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState<'rooms' | 'tenants'>('rooms');
 
   // Show loading state
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-500 font-medium">Đang đồng bộ dữ liệu...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   const handleRoomClick = (room: Room) => {
     setSelectedRoom(room);
@@ -120,6 +111,18 @@ export default function Home() {
   const handleDeleteAsset = async (assetId: string) => {
     await deleteAsset(assetId);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-500 font-medium">Đang đồng bộ dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main
