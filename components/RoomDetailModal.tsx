@@ -712,7 +712,7 @@ export default function RoomDetailModal({
             {
                 calculatedBill && (
                     <div className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none">
-                        <div ref={billRef} className="w-[210mm] min-h-[297mm] bg-[#F9F7F2] text-[#124E57] p-12 box-border font-serif">
+                        <div ref={billRef} style={{ width: '210mm', minHeight: '297mm', backgroundColor: '#F9F7F2', color: '#124E57', padding: '3rem', fontFamily: 'serif' }} className="box-border">
                             {/* Header */}
                             <div className="flex justify-between items-start mb-12">
                                 <div>
@@ -730,7 +730,7 @@ export default function RoomDetailModal({
                             <div className="mb-12">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-[#124E57] text-white">
+                                        <tr style={{ backgroundColor: '#124E57', color: '#ffffff' }}>
                                             <th className="p-4 rounded-tl-lg">Khoản mục</th>
                                             <th className="p-4">Chi tiết</th>
                                             <th className="p-4">Số lượng</th>
@@ -738,25 +738,25 @@ export default function RoomDetailModal({
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm">
-                                        <tr className="border-b border-[#2a7f8533]">
+                                        <tr style={{ borderBottom: '1px solid #2a7f8533' }}>
                                             <td className="p-4 font-bold">Tiền điện</td>
                                             <td className="p-4">{electricityOld} - {electricityNew}</td>
                                             <td className="p-4">{calculatedBill.electricityUsage} số</td>
                                             <td className="p-4 text-right">{formatCurrency(calculatedBill.electricityCost)}</td>
                                         </tr>
-                                        <tr className="border-b border-[#2a7f8533]">
+                                        <tr style={{ borderBottom: '1px solid #2a7f8533' }}>
                                             <td className="p-4 font-bold">Tiền nước</td>
                                             <td className="p-4">{roomTenants.length} người</td>
                                             <td className="p-4">{roomTenants.length} suất</td>
                                             <td className="p-4 text-right">{formatCurrency(calculatedBill.waterCost)}</td>
                                         </tr>
-                                        <tr className="border-b border-[#2a7f8533]">
+                                        <tr style={{ borderBottom: '1px solid #2a7f8533' }}>
                                             <td className="p-4 font-bold">Tiền rác</td>
                                             <td className="p-4">Cố định</td>
                                             <td className="p-4">1 phòng</td>
                                             <td className="p-4 text-right">{formatCurrency(calculatedBill.garbageFee)}</td>
                                         </tr>
-                                        <tr className="border-b border-[#2a7f8533]">
+                                        <tr style={{ borderBottom: '1px solid #2a7f8533' }}>
                                             <td className="p-4 font-bold">Tiền phòng</td>
                                             <td className="p-4">Cố định</td>
                                             <td className="p-4">1 tháng</td>
@@ -764,9 +764,9 @@ export default function RoomDetailModal({
                                         </tr>
                                     </tbody>
                                     <tfoot>
-                                        <tr className="bg-[#F9F7F2]">
+                                        <tr style={{ backgroundColor: '#F9F7F2' }}>
                                             <td colSpan={3} className="p-4 text-right font-bold text-xl">TỔNG CỘNG</td>
-                                            <td className="p-4 text-right font-bold text-xl text-[#124E57]">{formatCurrency(calculatedBill.totalAmount)}</td>
+                                            <td style={{ color: '#124E57' }} className="p-4 text-right font-bold text-xl">{formatCurrency(calculatedBill.totalAmount)}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -777,13 +777,13 @@ export default function RoomDetailModal({
                                 {/* Left: QR Code */}
                                 <div className="flex-1">
                                     <img src="/qr-only.png" alt="Payment QR" className="w-[120px] h-[120px] rounded" />
-                                    <p className="text-xs text-gray-600 mt-2">Quét mã để thanh toán</p>
+                                    <p style={{ color: '#4b5563' }} className="text-xs mt-2">Quét mã để thanh toán</p>
                                 </div>
 
                                 {/* Right: Amount & Bank Details */}
                                 <div className="text-right flex-[2]">
                                     <p className="text-lg mb-2">Thành tiền</p>
-                                    <p className="text-[2.5rem] font-bold font-serif mb-4 text-[#124E57]">{formatCurrency(calculatedBill.totalAmount)}</p>
+                                    <p style={{ color: '#124E57' }} className="text-[2.5rem] font-bold font-serif mb-4">{formatCurrency(calculatedBill.totalAmount)}</p>
 
                                     <div className="text-sm">
                                         <p className="mb-1 uppercase tracking-wider">Ngân hàng MB Bank</p>
