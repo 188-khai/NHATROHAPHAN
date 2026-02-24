@@ -7,7 +7,7 @@ import { TrendingUp, CheckCircle, AlertTriangle, Plus, Minus, DollarSign } from 
 import { formatCurrency } from '@/utils/calculations';
 
 export default function FinanceTracker() {
-    const { performance, transactions, loading, logWorkDay, logOT, logExpense, logKPI, stats, fetchFinanceData } = useFinanceTracker();
+    const { performance, transactions, loading, logWorkDay, logOT, logExpense, logKPI, resetFinanceData, stats, fetchFinanceData } = useFinanceTracker();
 
     const [kpiPercentage, setKpiPercentage] = useState('');
     const [expenseAmount, setExpenseAmount] = useState('');
@@ -52,9 +52,26 @@ export default function FinanceTracker() {
     const progressDays = ((performance?.daysWorked || 0) / TOTAL_WORK_DAYS) * 100;
     const progressOT = (stats.totalOTHours / TARGET_OT_HOURS) * 100;
 
+    const currentMonthYear = new Date().toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' });
+
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">Kiểm Soát Tài Chính & Hiệu Suất</h2>
+        <div className="space-y-6 relative">
+            <div className="flex justify-between items-end">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800">Kiểm Soát Tài Chính & Hiệu Suất</h2>
+                    <p className="text-gray-500 font-medium mt-1">Dữ liệu tháng: <span className="text-teal-600 font-bold">{currentMonthYear}</span></p>
+                </div>
+                <button
+                    onClick={() => {
+                        if (window.confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA LÀM LẠI TỪ ĐẦU?\n\nToàn bộ dữ liệu Ngày công, OT, Tiền KPI và Lịch sử chi tiêu của tháng này sẽ bị xóa sạch và không thể khôi phục!")) {
+                            resetFinanceData();
+                        }
+                    }}
+                    className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-lg text-sm font-bold border border-red-200 transition"
+                >
+                    Làm lại từ đầu
+                </button>
+            </div>
 
             {/* AI ALERT BOX */}
             {stats.advice && (

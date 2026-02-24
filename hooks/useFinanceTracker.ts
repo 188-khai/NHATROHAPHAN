@@ -252,6 +252,34 @@ export function useFinanceTracker() {
         } : null);
     };
 
+    // 5. Hard Reset Database cho tháng hiện tại
+    const resetFinanceData = async () => {
+        if (!performance || !supabase) return;
+
+        // Reset dữ liệu performance
+        await supabase
+            .from("work_performance_v2")
+            .update({
+                days_worked: 0,
+                ot_normal_hours: 0,
+                ot_sunday_hours: 0,
+                kpi_income: 0,
+                total_income: 0,
+                total_expense: 0,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", performance.id);
+
+        // Xóa toàn bộ giao dịch của tháng hiện tại
+        await supabase
+            .from("finance_transactions")
+            .delete()
+            .eq("performance_id", performance.id);
+
+        // Refresh lại giao diện
+        fetchFinanceData();
+    };
+
     // --- HỆ THỐNG CẢNH BÁO TIẾT KIỆM (AI/LOGIC ENGINE) ---
     const getFinancialAdvice = () => {
         if (!performance) return null;
@@ -319,6 +347,7 @@ export function useFinanceTracker() {
         logOT,
         logExpense,
         logKPI,
+        resetFinanceData,
         stats: {
             currentBalance,
             totalOTHours,
