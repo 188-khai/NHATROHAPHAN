@@ -3,11 +3,18 @@
 import React, { useState } from 'react';
 import { useFinanceTracker, TOTAL_WORK_DAYS, TARGET_OT_HOURS } from '@/hooks/useFinanceTracker';
 import { ExpenseCategory } from '@/types';
-import { TrendingUp, CheckCircle, AlertTriangle, Plus, Minus, DollarSign } from 'lucide-react';
+import { TrendingUp, CheckCircle, AlertTriangle, Plus, Minus, DollarSign, Pencil, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/utils/calculations';
 
 export default function FinanceTracker() {
-    const { performance, transactions, loading, logWorkDay, logOT, logExpense, logKPI, resetFinanceData, stats, fetchFinanceData } = useFinanceTracker();
+    const { performance, transactions, loading, logWorkDay, logOT, logExpense, logKPI, updateWorkPerformance, deleteTransaction, resetFinanceData, stats, fetchFinanceData } = useFinanceTracker();
+
+    // States for Edit Mode
+    const [isEditingPerf, setIsEditingPerf] = useState(false);
+    const [editDays, setEditDays] = useState('');
+    const [editOtNormal, setEditOtNormal] = useState('');
+    const [editOtSunday, setEditOtSunday] = useState('');
+    const [editKpiPercentage, setEditKpiPercentage] = useState('');
 
     const [kpiPercentage, setKpiPercentage] = useState('');
     const [expenseAmount, setExpenseAmount] = useState('');
@@ -43,6 +50,33 @@ export default function FinanceTracker() {
 
         await logOT(Number(otHours), otType);
         setOtHours('');
+    };
+
+    const handleSaveEditPerf = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const d = Number(editDays);
+        const otN = Number(editOtNormal);
+        const otS = Number(editOtSunday);
+        const kpiP = Number(editKpiPercentage);
+
+        if (isNaN(d) || isNaN(otN) || isNaN(otS) || isNaN(kpiP)) return;
+
+        const kpiIncome = (3000000 * kpiP) / 100;
+        await updateWorkPerformance(d, otN, otS, kpiIncome);
+        setIsEditingPerf(false);
+    };
+
+    const enterEditMode = () => {
+        setEditDays(String(performance?.daysWorked || 0));
+        setEditOtNormal(String(performance?.otNormalHours || 0));
+        setEditOtSunday(String(performance?.otSundayHours || 0));
+
+        // Compute reverse percentage from kpiIncome
+        const currentKpiIncome = performance?.kpiIncome || 0;
+        const currentKpiPercentage = (currentKpiIncome * 100) / 3000000;
+        setEditKpiPercentage(String(currentKpiPercentage));
+
+        setIsEditingPerf(true);
     };
 
     if (loading) {
@@ -157,72 +191,107 @@ export default function FinanceTracker() {
             {/* INPUT FORMS */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                {/* Ghi nhận Hiệu Suất */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Ghi nhận Hiệu Suất (Cày tiền)</h3>
-
-                    <div className="space-y-6">
-                        {/* Add Day Button */}
-                        <div className="bg-teal-50 p-4 rounded-xl flex items-center justify-between">
-                            <div>
-                                <h4 className="font-bold text-teal-800">Hoàn thành Ngày Công</h4>
-                                <p className="text-sm text-teal-600">+384.615 VNĐ / ngày</p>
-                            </div>
-                            <button
-                                onClick={() => logWorkDay(1)}
-                                disabled={(performance?.daysWorked || 0) >= TOTAL_WORK_DAYS}
-                                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition disabled:opacity-50"
-                            >
-                                <Plus className="inline mr-1" /> Thêm 1 Ngày
+                {/* Ghi nhận/Cập nhật Hiệu Suất */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative">
+                    <div className="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 className="text-lg font-bold text-gray-800">Hiệu Suất (Cày tiền)</h3>
+                        {!isEditingPerf && (
+                            <button onClick={enterEditMode} className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-semibold">
+                                <Pencil size={16} className="mr-1" /> Sửa nhanh
                             </button>
-                        </div>
-
-                        {/* Log OT Form */}
-                        <form onSubmit={handleLogOT} className="bg-orange-50 p-4 rounded-xl flex gap-3 items-end">
-                            <div className="flex-1">
-                                <label className="block text-xs font-semibold text-orange-800 mb-1">Ghi nhận Tăng ca (Giờ)</label>
-                                <input
-                                    type="number" step="0.5" min="0.5" required
-                                    value={otHours}
-                                    onChange={(e) => setOtHours(e.target.value)}
-                                    className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none text-black font-bold"
-                                    placeholder="VD: 2"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-xs font-semibold text-orange-800 mb-1">Loại OT</label>
-                                <select
-                                    title="Loại OT"
-                                    value={otType}
-                                    onChange={(e) => setOtType(e.target.value as 'normal' | 'sunday')}
-                                    className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none bg-white text-black font-bold"
-                                >
-                                    <option value="normal">Ngày Thường (x1.5)</option>
-                                    <option value="sunday">Chủ Nhật (x2.0)</option>
-                                </select>
-                            </div>
-                            <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
-                                Lưu OT
-                            </button>
-                        </form>
-
-                        {/* Log KPI Form */}
-                        <form onSubmit={handleLogKPI} className="bg-blue-50 p-4 rounded-xl flex gap-3 items-end">
-                            <div className="flex-1">
-                                <label className="block text-xs font-semibold text-blue-800 mb-1">Thưởng KPI tháng (%)</label>
-                                <input
-                                    type="number" required min="0" max="100" step="1"
-                                    value={kpiPercentage}
-                                    onChange={(e) => setKpiPercentage(e.target.value)}
-                                    className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-300 outline-none text-black font-bold"
-                                    placeholder="Ví dụ: 80"
-                                />
-                            </div>
-                            <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
-                                Lưu KPI
-                            </button>
-                        </form>
+                        )}
                     </div>
+
+                    {isEditingPerf ? (
+                        <form onSubmit={handleSaveEditPerf} className="space-y-4 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                            <h4 className="font-bold text-blue-800 text-sm mb-2">Chế độ ghi đè dữ liệu</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Số Ngày Công</label>
+                                    <input title="Số Ngày Công" type="number" required min="0" max="31" step="0.5" value={editDays} onChange={(e) => setEditDays(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black font-bold outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Thưởng KPI (%)</label>
+                                    <input title="Thưởng KPI (%)" type="number" required min="0" max="100" step="1" value={editKpiPercentage} onChange={(e) => setEditKpiPercentage(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black font-bold outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Tổng OT Thường (h)</label>
+                                    <input title="Tổng OT Thường" type="number" required min="0" step="0.5" value={editOtNormal} onChange={(e) => setEditOtNormal(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black font-bold outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Tổng OT CN (h)</label>
+                                    <input title="Tổng OT Chủ Nhật" type="number" required min="0" step="0.5" value={editOtSunday} onChange={(e) => setEditOtSunday(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black font-bold outline-none" />
+                                </div>
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <button type="button" onClick={() => setIsEditingPerf(false)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-bold transition">Hủy</button>
+                                <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-bold transition">Lưu Thay Đổi</button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Add Day Button */}
+                            <div className="bg-teal-50 p-4 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <h4 className="font-bold text-teal-800">Hoàn thành Ngày Công</h4>
+                                    <p className="text-sm text-teal-600">+384.615 VNĐ / ngày</p>
+                                </div>
+                                <button
+                                    onClick={() => logWorkDay(1)}
+                                    disabled={(performance?.daysWorked || 0) >= TOTAL_WORK_DAYS}
+                                    className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition disabled:opacity-50"
+                                >
+                                    <Plus className="inline mr-1" /> Thêm 1 Ngày
+                                </button>
+                            </div>
+
+                            {/* Log OT Form */}
+                            <form onSubmit={handleLogOT} className="bg-orange-50 p-4 rounded-xl flex gap-3 items-end">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-orange-800 mb-1">Cộng thêm OT (Giờ)</label>
+                                    <input
+                                        type="number" step="0.5" min="0.5" required
+                                        value={otHours}
+                                        onChange={(e) => setOtHours(e.target.value)}
+                                        className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none text-black font-bold"
+                                        placeholder="VD: 2"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-orange-800 mb-1">Loại OT</label>
+                                    <select
+                                        title="Loại OT"
+                                        value={otType}
+                                        onChange={(e) => setOtType(e.target.value as 'normal' | 'sunday')}
+                                        className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none bg-white text-black font-bold"
+                                    >
+                                        <option value="normal">Ngày Thường (x1.5)</option>
+                                        <option value="sunday">Chủ Nhật (x2.0)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
+                                    Cộng OT
+                                </button>
+                            </form>
+
+                            {/* Log KPI Form */}
+                            <form onSubmit={handleLogKPI} className="bg-blue-50 p-4 rounded-xl flex gap-3 items-end">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-blue-800 mb-1">Cộng thưởng KPI (%)</label>
+                                    <input
+                                        type="number" required min="0" max="100" step="1"
+                                        value={kpiPercentage}
+                                        onChange={(e) => setKpiPercentage(e.target.value)}
+                                        className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-300 outline-none text-black font-bold"
+                                        placeholder="Ví dụ: 80"
+                                    />
+                                </div>
+                                <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
+                                    Cộng KPI
+                                </button>
+                            </form>
+                        </div>
+                    )}
                 </div>
 
                 {/* Ghi nhận Chi Tiêu */}
@@ -309,6 +378,19 @@ export default function FinanceTracker() {
                                         <td className="px-4 py-3 text-sm text-gray-700">{tx.note || '-'}</td>
                                         <td className="px-4 py-3 text-sm font-bold text-red-500 text-right">
                                             - {formatCurrency(tx.amount)}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-right">
+                                            <button
+                                                onClick={() => {
+                                                    if (window.confirm("Xóa giao dịch chi tiêu này? Tiền sẽ được hoàn lại vào Số dư.")) {
+                                                        deleteTransaction(tx.id);
+                                                    }
+                                                }}
+                                                className="text-gray-400 hover:text-red-600 transition"
+                                                title="Xóa giao dịch"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}

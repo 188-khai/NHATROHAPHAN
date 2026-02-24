@@ -41,3 +41,4 @@ CREATE POLICY "Cho phép user thao tác trên finance_transactions"
 
 -- Cập nhật bảng thêm trường kpi_income
 ALTER TABLE work_performance_v2 ADD COLUMN IF NOT EXISTS kpi_income NUMERIC DEFAULT 0;
+ALTER POLICY "Cho phép user thao tác trên finance_transactions" ON finance_transactions USING (true) WITH CHECK (true);

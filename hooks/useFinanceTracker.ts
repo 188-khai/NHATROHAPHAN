@@ -252,7 +252,66 @@ export function useFinanceTracker() {
         } : null);
     };
 
-    // 5. Hard Reset Database cho tháng hiện tại
+    // 5. Chỉnh sửa toàn bộ thông tin (Overwrites existing values)
+    const updateWorkPerformance = async (
+        newDaysWorked: number,
+        newOtNormalHours: number,
+        newOtSundayHours: number,
+        newKpiIncome: number
+    ) => {
+        if (!performance || !supabase) return;
+
+        const totalIncome = (newDaysWorked * DAILY_WAGE)
+            + (newOtNormalHours * OT_NORMAL_RATE)
+            + (newOtSundayHours * OT_SUNDAY_RATE)
+            + newKpiIncome;
+
+        await supabase
+            .from("work_performance_v2")
+            .update({
+                days_worked: newDaysWorked,
+                ot_normal_hours: newOtNormalHours,
+                ot_sunday_hours: newOtSundayHours,
+                kpi_income: newKpiIncome,
+                total_income: totalIncome,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", performance.id);
+
+        setPerformance(prev => prev ? {
+            ...prev,
+            daysWorked: newDaysWorked,
+            otNormalHours: newOtNormalHours,
+            otSundayHours: newOtSundayHours,
+            kpiIncome: newKpiIncome,
+            totalIncome: totalIncome
+        } : null);
+    };
+
+    // 6. Xóa giao dịch chi tiêu bị lỗi
+    const deleteTransaction = async (txId: string) => {
+        if (!performance || !supabase) return;
+
+        const txToDelete = transactions.find(t => t.id === txId);
+        if (!txToDelete) return;
+
+        await supabase.from("finance_transactions").delete().eq("id", txId);
+
+        const newTotalExpense = Math.max(0, performance.totalExpense - txToDelete.amount);
+
+        await supabase
+            .from("work_performance_v2")
+            .update({
+                total_expense: newTotalExpense,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", performance.id);
+
+        setTransactions(prev => prev.filter(t => t.id !== txId));
+        setPerformance(prev => prev ? { ...prev, totalExpense: newTotalExpense } : null);
+    };
+
+    // 7. Hard Reset Database cho tháng hiện tại
     const resetFinanceData = async () => {
         if (!performance || !supabase) return;
 
@@ -359,6 +418,8 @@ export function useFinanceTracker() {
         logOT,
         logExpense,
         logKPI,
+        updateWorkPerformance,
+        deleteTransaction,
         resetFinanceData,
         stats: {
             currentBalance,
