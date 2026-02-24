@@ -9,7 +9,7 @@ import { formatCurrency } from '@/utils/calculations';
 export default function FinanceTracker() {
     const { performance, transactions, loading, logWorkDay, logOT, logExpense, logKPI, stats, fetchFinanceData } = useFinanceTracker();
 
-    const [kpiAmount, setKpiAmount] = useState('');
+    const [kpiPercentage, setKpiPercentage] = useState('');
     const [expenseAmount, setExpenseAmount] = useState('');
     const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('Ăn uống');
     const [expenseNote, setExpenseNote] = useState('');
@@ -28,10 +28,13 @@ export default function FinanceTracker() {
 
     const handleLogKPI = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!kpiAmount || isNaN(Number(kpiAmount.replace(/\D/g, '')))) return;
+        const percentage = Number(kpiPercentage);
+        if (isNaN(percentage) || percentage <= 0) return;
 
-        await logKPI(Number(kpiAmount.replace(/\D/g, '')));
-        setKpiAmount('');
+        // Tính số tiền KPI thực nhận dựa trên phần trăm của 3.000.000 VNĐ
+        const calculatedKpi = (3000000 * percentage) / 100;
+        await logKPI(calculatedKpi);
+        setKpiPercentage('');
     };
 
     const handleLogOT = async (e: React.FormEvent) => {
@@ -175,7 +178,7 @@ export default function FinanceTracker() {
                                     title="Loại OT"
                                     value={otType}
                                     onChange={(e) => setOtType(e.target.value as 'normal' | 'sunday')}
-                                    className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none bg-white"
+                                    className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none bg-white text-black font-bold"
                                 >
                                     <option value="normal">Ngày Thường (x1.5)</option>
                                     <option value="sunday">Chủ Nhật (x2.0)</option>
@@ -189,13 +192,13 @@ export default function FinanceTracker() {
                         {/* Log KPI Form */}
                         <form onSubmit={handleLogKPI} className="bg-blue-50 p-4 rounded-xl flex gap-3 items-end">
                             <div className="flex-1">
-                                <label className="block text-xs font-semibold text-blue-800 mb-1">Thưởng KPI tháng (VNĐ)</label>
+                                <label className="block text-xs font-semibold text-blue-800 mb-1">Thưởng KPI tháng (%)</label>
                                 <input
-                                    type="text" required
-                                    value={kpiAmount ? Number(kpiAmount.replace(/\D/g, '')).toLocaleString() : ''}
-                                    onChange={(e) => setKpiAmount(e.target.value)}
+                                    type="number" required min="0" max="100" step="1"
+                                    value={kpiPercentage}
+                                    onChange={(e) => setKpiPercentage(e.target.value)}
                                     className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-300 outline-none text-black font-bold"
-                                    placeholder="Ví dụ: 3,000,000"
+                                    placeholder="Ví dụ: 80"
                                 />
                             </div>
                             <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
@@ -228,7 +231,7 @@ export default function FinanceTracker() {
                                     title="Rổ chi tiêu"
                                     value={expenseCategory}
                                     onChange={(e) => setExpenseCategory(e.target.value as ExpenseCategory)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-black font-bold"
                                 >
                                     <option value="Ăn uống">Ăn uống</option>
                                     <option value="Di chuyển">Di chuyển</option>
@@ -244,7 +247,7 @@ export default function FinanceTracker() {
                                     type="text"
                                     value={expenseNote}
                                     onChange={(e) => setExpenseNote(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-black font-bold"
                                     placeholder="Đổ xăng xe máy..."
                                 />
                             </div>
