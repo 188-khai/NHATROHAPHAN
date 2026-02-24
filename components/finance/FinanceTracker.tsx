@@ -7,8 +7,9 @@ import { TrendingUp, CheckCircle, AlertTriangle, Plus, Minus, DollarSign } from 
 import { formatCurrency } from '@/utils/calculations';
 
 export default function FinanceTracker() {
-    const { performance, transactions, loading, logWorkDay, logOT, logExpense, stats, fetchFinanceData } = useFinanceTracker();
+    const { performance, transactions, loading, logWorkDay, logOT, logExpense, logKPI, stats, fetchFinanceData } = useFinanceTracker();
 
+    const [kpiAmount, setKpiAmount] = useState('');
     const [expenseAmount, setExpenseAmount] = useState('');
     const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('Ăn uống');
     const [expenseNote, setExpenseNote] = useState('');
@@ -23,6 +24,14 @@ export default function FinanceTracker() {
         await logExpense(Number(expenseAmount.replace(/\D/g, '')), expenseCategory, expenseNote);
         setExpenseAmount('');
         setExpenseNote('');
+    };
+
+    const handleLogKPI = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!kpiAmount || isNaN(Number(kpiAmount.replace(/\D/g, '')))) return;
+
+        await logKPI(Number(kpiAmount.replace(/\D/g, '')));
+        setKpiAmount('');
     };
 
     const handleLogOT = async (e: React.FormEvent) => {
@@ -156,7 +165,7 @@ export default function FinanceTracker() {
                                     type="number" step="0.5" min="0.5" required
                                     value={otHours}
                                     onChange={(e) => setOtHours(e.target.value)}
-                                    className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none"
+                                    className="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none text-black font-bold"
                                     placeholder="VD: 2"
                                 />
                             </div>
@@ -176,6 +185,23 @@ export default function FinanceTracker() {
                                 Lưu OT
                             </button>
                         </form>
+
+                        {/* Log KPI Form */}
+                        <form onSubmit={handleLogKPI} className="bg-blue-50 p-4 rounded-xl flex gap-3 items-end">
+                            <div className="flex-1">
+                                <label className="block text-xs font-semibold text-blue-800 mb-1">Thưởng KPI tháng (VNĐ)</label>
+                                <input
+                                    type="text" required
+                                    value={kpiAmount ? Number(kpiAmount.replace(/\D/g, '')).toLocaleString() : ''}
+                                    onChange={(e) => setKpiAmount(e.target.value)}
+                                    className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-300 outline-none text-black font-bold"
+                                    placeholder="Ví dụ: 3,000,000"
+                                />
+                            </div>
+                            <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
+                                Lưu KPI
+                            </button>
+                        </form>
                     </div>
                 </div>
 
@@ -190,7 +216,7 @@ export default function FinanceTracker() {
                                 type="text" required
                                 value={expenseAmount ? Number(expenseAmount.replace(/\D/g, '')).toLocaleString() : ''}
                                 onChange={(e) => setExpenseAmount(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-xl font-bold text-red-500"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-xl text-black font-bold"
                                 placeholder="50,000"
                             />
                         </div>

@@ -38,3 +38,6 @@ CREATE POLICY "Cho phép user thao tác trên finance_transactions"
     ON finance_transactions FOR ALL
     USING (auth.uid() = user_id OR user_id IS NULL)
     WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+
+-- Cập nhật bảng thêm trường kpi_income
+ALTER TABLE work_performance_v2 ADD COLUMN IF NOT EXISTS kpi_income NUMERIC DEFAULT 0;

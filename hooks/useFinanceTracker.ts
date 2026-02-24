@@ -5,10 +5,8 @@ import { useAuth } from "@/components/AuthProvider";
 
 // --- CẤU HÌNH THÔNG SỐ TÀI CHÍNH TỪ USER ---
 export const BASE_SALARY = 7000000;         // Lương cơ bản: 7tr
-export const KPI_BONUS = 3000000;           // KPI: 3tr
-export const TOTAL_FIXED_INCOME = 10000000; // Tổng thu nhập cứng (10tr)
 export const TOTAL_WORK_DAYS = 26;          // Chuẩn 26 ngày công
-export const DAILY_WAGE = 384615;           // (10tr / 26 ngày) Lương 1 ngày
+export const DAILY_WAGE = Math.round(BASE_SALARY / TOTAL_WORK_DAYS); // ~ 269,231 đ
 
 export const HOURLY_WAGE_BASE = 33654;      // Lương cơ bản theo giờ (7tr / 26 / 8)
 export const OT_NORMAL_RATE = 50481;        // OT Ngày thường (x1.5 của HOURLY_WAGE_BASE)
@@ -54,6 +52,7 @@ export function useFinanceTracker() {
                 daysWorked: perfData.days_worked,
                 otNormalHours: Number(perfData.ot_normal_hours),
                 otSundayHours: Number(perfData.ot_sunday_hours),
+                kpiIncome: Number(perfData.kpi_income || 0),
                 totalIncome: Number(perfData.total_income),
                 totalExpense: Number(perfData.total_expense),
                 userId: perfData.user_id
@@ -65,6 +64,7 @@ export function useFinanceTracker() {
                 days_worked: 0,
                 ot_normal_hours: 0,
                 ot_sunday_hours: 0,
+                kpi_income: 0,
                 total_income: 0,
                 total_expense: 0,
                 user_id: user.id
@@ -84,6 +84,7 @@ export function useFinanceTracker() {
                     daysWorked: insertedData.days_worked,
                     otNormalHours: Number(insertedData.ot_normal_hours),
                     otSundayHours: Number(insertedData.ot_sunday_hours),
+                    kpiIncome: Number(insertedData.kpi_income || 0),
                     totalIncome: Number(insertedData.total_income),
                     totalExpense: Number(insertedData.total_expense),
                     userId: insertedData.user_id
@@ -228,6 +229,28 @@ export function useFinanceTracker() {
         } : null);
     };
 
+    // 4. Ghi nhận KPI (Nhập tay)
+    const logKPI = async (amount: number) => {
+        if (!performance || !supabase) return;
+
+        const newKpiIncome = (performance.kpiIncome || 0) + amount;
+        const newTotalIncome = performance.totalIncome + amount;
+
+        await supabase
+            .from("work_performance_v2")
+            .update({
+                kpi_income: newKpiIncome,
+                total_income: newTotalIncome,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", performance.id);
+
+        setPerformance(prev => prev ? {
+            ...prev,
+            kpiIncome: newKpiIncome,
+            totalIncome: newTotalIncome
+        } : null);
+    };
 
     // --- HỆ THỐNG CẢNH BÁO TIẾT KIỆM (AI/LOGIC ENGINE) ---
     const getFinancialAdvice = () => {
@@ -295,6 +318,7 @@ export function useFinanceTracker() {
         logWorkDay,
         logOT,
         logExpense,
+        logKPI,
         stats: {
             currentBalance,
             totalOTHours,

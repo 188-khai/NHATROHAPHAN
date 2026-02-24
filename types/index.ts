@@ -66,6 +66,7 @@ export interface WorkPerformanceV2 {
     daysWorked: number;
     otNormalHours: number;
     otSundayHours: number;
+    kpiIncome: number;
     totalIncome: number;
     totalExpense: number;
     userId?: string;
