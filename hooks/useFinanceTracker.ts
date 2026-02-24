@@ -276,8 +276,20 @@ export function useFinanceTracker() {
             .delete()
             .eq("performance_id", performance.id);
 
-        // Refresh lại giao diện
-        fetchFinanceData();
+        // Cập nhật State Frontend ngay lập tức
+        setPerformance(prev => prev ? {
+            ...prev,
+            daysWorked: 0,
+            otNormalHours: 0,
+            otSundayHours: 0,
+            kpiIncome: 0,
+            totalIncome: 0,
+            totalExpense: 0,
+        } : null);
+        setTransactions([]);
+
+        // Refresh lại bằng fetchFinanceData để đảm bảo đồng bộ
+        await fetchFinanceData();
     };
 
     // --- HỆ THỐNG CẢNH BÁO TIẾT KIỆM (AI/LOGIC ENGINE) ---
