@@ -1,0 +1,113 @@
+# Task List: Rental Management App
+
+- [/] Project Setup <!-- id: 0 -->
+    - [x] Initialize Next.js project with Tailwind CSS in `web-app` directory <!-- id: 1 -->
+    - [x] Set up project structure (components, pages/app, utils) <!-- id: 2 -->
+- [/] Core Logic & Data Management <!-- id: 3 -->
+    - [x] Implement LocalStorage utility for data persistence <!-- id: 4 -->
+    - [x] Define data types (Room, Tenant, Bill) <!-- id: 5 -->
+    - [x] Create initial dummy data seeding <!-- id: 6 -->
+- [/] Feature Implementation <!-- id: 7 -->
+    - [x] **Dashboard**: Display summary cards (Total rooms, Available, Rented, Projected Revenue) <!-- id: 8 -->
+    - [x] **Room Management**: <!-- id: 9 -->
+        - [x] List view of 20 rooms <!-- id: 10 -->
+        - [x] Edit room status and price <!-- id: 11 -->
+    - [x] **Tenant Management**: <!-- id: 12 -->
+        - [x] Add/Edit tenant details (Name, Phone, Start Date, Deposit) <!-- id: 13 -->
+    - [x] **Billing System**: <!-- id: 14 -->
+        - [x] Input form for electricity and water readings <!-- id: 15 -->
+        - [x] Automatic calculation logic based on configurable rates <!-- id: 16 -->
+- [x] Feature Implementation (Phase 2) <!-- id: 22 -->
+    - [x] **Billing Enhancements**: <!-- id: 23 -->
+        - [x] Export Bill as PDF <!-- id: 24 -->
+    - [x] **Tenant Enhancements**: <!-- id: 25 -->
+        - [x] Support multiple tenants per room <!-- id: 26 -->
+        - [x] Upload and view ID Card (CCCD) images <!-- id: 27 -->
+        - [x] Global Tenant List View <!-- id: 28 -->
+- [x] **Bug Fixes**:
+    - [x] Fix `doc.autoTable is not a function` error <!-- id: 29 -->
+    - [x] Customize PDF Style (Teal/Beige theme + Footer Message) <!-- id: 30 -->
+    - [x] Fix `html2canvas` "unsupported color function" error <!-- id: 31 -->
+- [ ] UI/UX Polish <!-- id: 17 -->
+    - [x] Ensure Mobile Responsiveness <!-- id: 18 -->
+    - [x] Apply modern Tailwind styling (colors, spacing, typography) <!-- id: 19 -->
+    - [x] Improve input visibility (black text) <!-- id: 32 -->
+    - [x] Fix leading zero issue in input fields <!-- id: 33 -->
+    - [x] Fix leading zero issue in input fields <!-- id: 33 -->
+    - [x] Fix leading zero issue in input fields <!-- id: 33 -->
+    - [x] Debug electricity calculation logic <!-- id: 34 -->
+- [x] Tenant Management Features <!-- id: 35 -->
+    - [x] Add Edit/Delete actions to "All Tenants" list <!-- id: 36 -->
+    - [x] Fix `useState` not defined error <!-- id: 37 -->
+- [ ] Bug Fixes <!-- id: 38 -->
+    - [x] Fix tenant list not updating in Room Detail Modal after adding tenant <!-- id: 39 -->
+- [x] Update default room price to 1,600,000 VND <!-- id: 40 -->
+- [x] Improve readability of Bill Summary <!-- id: 41 -->
+- [x] Swap Room Status Colors (Rented=Green, Available=Red) <!-- id: 42 -->
+- [x] Format Deposit Input (remove leading zeros, add thousands separators) <!-- id: 43 -->
+- [x] Format Deposit Input in Tenant Edit Modal <!-- id: 44 -->
+- [x] Add Payment QR Code and Bank Info to Bill <!-- id: 45 -->
+- [x] Crop QR Code Image and Adjust Bill Layout <!-- id: 46 -->
+- [x] Implement Excel Export for Tenant List <!-- id: 47 -->
+- [x] Implement Send Bill via Zalo (Copy Image to Clipboard + Open Chat) <!-- id: 48 -->
+- [x] Implement Bill History (12 months) and Auto-fill Old Readings <!-- id: 49 -->
+- [x] Implement Room-specific Bill History in Bill Tab <!-- id: 50 -->
+- [x] Implement Bulk Bill Calculation (Batch Entry for Electricity) <!-- id: 51 -->
+    - [x] Implement Batch Zalo Sending (Copy & Open Tab with delay) <!-- id: 52 -->
+- [ ] Implement Bill Management Features <!-- id: 53 -->
+    - [x] Add Edit/Delete actions in Room Bill History <!-- id: 54 -->
+    - [x] Add Edit/Delete actions in Global Bill History <!-- id: 55 -->
+- [ ] Financial Management Features <!-- id: 56 -->
+    - [x] Implement Electricity Reconciliation (Đối soát điện năng) <!-- id: 57 -->
+        - [x] Calculate total kWh and revenue from rooms <!-- id: 58 -->
+        - [x] Compare with EVN Bill and calculate Profit/Loss <!-- id: 59 -->
+        - [x] Export Reconciliation Table to Image/Excel <!-- id: 60 -->
+- [x] Asset Management Module (Quản lý tài sản) <!-- id: 61 -->
+    - [x] Create Asset Component & Type Definitions <!-- id: 62 -->
+    - [x] Integrate into RoomDetailModal <!-- id: 63 -->
+    - [x] Implement Maintenance Logic & Dashboard Widget <!-- id: 64 -->
+    - [x] Add Checklist Mode for Handover <!-- id: 65 -->
+    - [x] Integrate Camera for Asset Photos <!-- id: 67 -->
+    - [ ] Asset Summary Dashboard <!-- id: 66 -->
+- [x] Mobile App Transformation (PWA) <!-- id: 68 -->
+    - [x] Install PWA dependencies (@ducanh2912/next-pwa) <!-- id: 69 -->
+    - [x] Configure `next.config.ts` <!-- id: 70 -->
+    - [x] Create `manifest.json` <!-- id: 71 -->
+    - [x] Optimize UI for Mobile (Viewport, Icons, Spacing) <!-- id: 72 -->
+- [x] Deployment <!-- id: 73 -->
+    - [x] Create Deployment Guide (Vercel) <!-- id: 74 -->
+    - [x] Verify production build locally <!-- id: 75 -->
+    - [x] Troubleshooting Vercel (Force Update) <!-- id: 76 -->
+- [x] Verification <!-- id: 20 -->
+    - [x] Verify all features work as expected (PDF, Zalo, Calculations) <!-- id: 21 -->
+
+- [x] **Phase 3: Backend & Sync (Cloud Data)** <!-- id: 77 -->
+    - [x] Setup Supabase Project & Database Schema <!-- id: 78 -->
+    - [x] Implement Authentication (Login/Register) <!-- id: 79 -->
+    - [x] Replace LocalStorage with Supabase Hooks <!-- id: 80 -->
+    - [x] Migrate existing LocalStorage data to Cloud <!-- id: 81 -->
+    - [/] **Deployment Troubleshooting** <!-- id: 90 -->
+        - [x] Fix TypeScript build errors (null checks) <!-- id: 91 -->
+        - [x] Configure Environment Variables on Vercel <!-- id: 92 -->
+        - [x] Fix Runtime Application Error (Auth/DB) <!-- id: 93 -->
+    - [x] Resolve Vercel Git Integration Sync Issue <!-- id: 94 -->
+    - [x] Implement "Sample Data Generation" Feature <!-- id: 95 -->
+
+- [x] **Phase 4: Enhancements (Charts & Limits)** <!-- id: 96 -->
+    - [x] Implement Advanced Revenue Chart (Recharts) <!-- id: 97 -->
+    - [x] Implement Advanced Revenue Chart (Recharts) <!-- id: 97 -->
+    - [x] Document Data Storage Limits <!-- id: 98 -->
+
+- [x] **Bug Fixes (Post-Deployment)** <!-- id: 99 -->
+    - [x] Fix "Export PDF" and "Send Zalo" failure (Downgraded jspdf to 2.5.2 & Fixed html2canvas config & Removed OKLCH colors) <!-- id: 100 -->
+    - [x] Fix Room Status not updating to "Rented" when 2nd tenant is added <!-- id: 101 -->
+    - [x] Allow duplicate phone numbers for tenants (sharing same phone) <!-- id: 102 -->
+    - [x] Fix Bill History not updating immediately (Prevent UI reload on background sync) <!-- id: 103 -->
+    - [x] Fix Room List sorting (Ensure rooms stay in order after updates) <!-- id: 104 -->
+    - [x] Auto-save Bill on Export/Zalo (Prevent missing history if user forgets to click Save) <!-- id: 105 -->
+
+- [x] **Phase 5: Integrated Financial & Performance Tracker** <!-- id: 106 -->
+    - [x] Setup Supabase Schema (`work_performance_v2` and `finance_transactions`) <!-- id: 107 -->
+    - [x] Create UI Dashboard (Progress, Income, Expenses, Balance, Savings Alert) <!-- id: 108 -->
+    - [x] Implement Logging Logic (Add Day, OT Auto-calculate, Add Expense) <!-- id: 109 -->
+    - [x] Implement AI/Logic Engine for Savings Reminders & Goal Tracking <!-- id: 110 -->

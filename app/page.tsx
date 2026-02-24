@@ -14,6 +14,8 @@ import ElectricityReconciliationModal from '@/components/ElectricityReconciliati
 import DataMigrationModal from '@/components/DataMigrationModal';
 import RevenueChart from '@/components/RevenueChart';
 
+import FinanceTracker from '@/components/finance/FinanceTracker';
+
 export default function Home() {
   const {
     rooms, tenants, bills, assets, loading,
@@ -26,7 +28,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBatchBillingOpen, setIsBatchBillingOpen] = useState(false);
   const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'rooms' | 'tenants'>('rooms');
+  const [activeView, setActiveView] = useState<'rooms' | 'tenants' | 'finance'>('rooms');
 
   // Show loading state
 
@@ -268,12 +270,21 @@ export default function Home() {
               >
                 Tất cả khách thuê
               </button>
+              <button
+                onClick={() => setActiveView('finance')}
+                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeView === 'finance'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                Cá Nhân (Lương & OT)
+              </button>
             </nav>
           </div>
 
           {activeView === 'rooms' ? (
             <RoomList rooms={rooms} tenants={tenants} onRoomClick={handleRoomClick} />
-          ) : (
+          ) : activeView === 'tenants' ? (
             <div>
               <FinancialOverview
                 bills={bills}
@@ -290,6 +301,10 @@ export default function Home() {
                   onRemoveTenant={handleRemoveTenant}
                 />
               </div>
+            </div>
+          ) : (
+            <div className="mt-6">
+              <FinanceTracker />
             </div>
           )}
         </div>

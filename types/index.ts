@@ -59,3 +59,35 @@ export interface Asset {
         note?: string;
     }[];
 }
+
+export interface WorkPerformanceV2 {
+    id: string; // uuid
+    monthYear: string; // format "MM-YYYY"
+    daysWorked: number;
+    otNormalHours: number;
+    otSundayHours: number;
+    totalIncome: number;
+    totalExpense: number;
+    userId?: string;
+}
+
+export type ExpenseCategory = 'Ăn uống' | 'Di chuyển' | 'Mua sắm' | 'Giải trí' | 'Sinh hoạt' | 'Khác';
+
+export interface FinanceTransaction {
+    id: string; // uuid
+    performanceId: string;
+    amount: number;
+    category: ExpenseCategory;
+    note: string;
+    transactionDate: string; // ISO format
+    userId?: string;
+}
+
+export interface WorkPerformance {
+    id: string; // uuid
+    monthYear: string; // format "MM-YYYY"
+    daysWorked: number;
+    otHours: number;
+    currentIncome: number;
+    userId?: string;
+}
