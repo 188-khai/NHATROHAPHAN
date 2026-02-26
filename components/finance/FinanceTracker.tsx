@@ -7,7 +7,7 @@ import { TrendingUp, CheckCircle, AlertTriangle, Plus, Minus, DollarSign, Pencil
 import { formatCurrency } from '@/utils/calculations';
 
 export default function FinanceTracker() {
-    const { performance, transactions, loading, logWorkDay, logOT, logExpense, logKPI, updateWorkPerformance, deleteTransaction, resetFinanceData, stats, fetchFinanceData } = useFinanceTracker();
+    const { performance, transactions, loading, logWorkDay, logOT, logExpense, logKPI, updateWorkPerformance, deleteTransaction, resetFinanceData, stats, fetchFinanceData, selectedMonthYear, setSelectedMonthYear } = useFinanceTracker();
 
     // States for Edit Mode
     const [isEditingPerf, setIsEditingPerf] = useState(false);
@@ -86,14 +86,33 @@ export default function FinanceTracker() {
     const progressDays = ((performance?.daysWorked || 0) / TOTAL_WORK_DAYS) * 100;
     const progressOT = (stats.totalOTHours / TARGET_OT_HOURS) * 100;
 
-    const currentMonthYear = new Date().toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' });
+    const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value; // Dạng YYYY-MM
+        if (val) {
+            const [year, month] = val.split('-');
+            setSelectedMonthYear(`${month}-${year}`);
+        }
+    };
+
+    // Chuyển MM-YYYY về YYYY-MM cho input type="month"
+    const inputMonthValue = selectedMonthYear ? `${selectedMonthYear.split('-')[1]}-${selectedMonthYear.split('-')[0]}` : '';
 
     return (
         <div className="space-y-6 relative">
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end flex-wrap gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">Kiểm Soát Tài Chính & Hiệu Suất</h2>
-                    <p className="text-gray-500 font-medium mt-1">Dữ liệu tháng: <span className="text-teal-600 font-bold">{currentMonthYear}</span></p>
+                    <div className="flex items-center mt-2 group">
+                        <label htmlFor="month-picker" className="text-gray-500 font-medium mr-2">Dữ liệu tháng:</label>
+                        <input
+                            id="month-picker"
+                            type="month"
+                            title="Chọn tháng"
+                            value={inputMonthValue}
+                            onChange={handleMonthChange}
+                            className="px-3 py-1.5 border border-teal-200 rounded-lg text-teal-700 font-bold outline-none focus:ring-2 focus:ring-teal-400 bg-teal-50 hover:bg-teal-100 transition cursor-pointer"
+                        />
+                    </div>
                 </div>
                 <button
                     onClick={() => {

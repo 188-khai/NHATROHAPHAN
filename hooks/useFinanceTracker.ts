@@ -28,17 +28,17 @@ export function useFinanceTracker() {
         return `${month}-${year}`; // Ví dụ: '02-2026'
     };
 
+    const [selectedMonthYear, setSelectedMonthYear] = useState<string>(getCurrentMonthYear());
+
     const fetchFinanceData = async () => {
         if (!user || !supabase) return;
         setLoading(true);
 
-        const currentMonthYear = getCurrentMonthYear();
-
-        // 1. Fetch Performance Record cho tháng hiện tại
+        // 1. Fetch Performance Record cho tháng được chọn
         const { data: perfData, error: perfError } = await supabase
             .from("work_performance_v2")
             .select("*")
-            .eq("month_year", currentMonthYear)
+            .eq("month_year", selectedMonthYear)
             .limit(1)
             .single();
 
@@ -60,7 +60,7 @@ export function useFinanceTracker() {
         } else if (perfError && perfError.code === 'PGRST116') {
             // Chưa có data tháng này -> Khởi tạo mới từ 0
             const newRecord = {
-                month_year: currentMonthYear,
+                month_year: selectedMonthYear,
                 days_worked: 0,
                 ot_normal_hours: 0,
                 ot_sunday_hours: 0,
@@ -120,7 +120,7 @@ export function useFinanceTracker() {
 
     useEffect(() => {
         fetchFinanceData();
-    }, [user]);
+    }, [user, selectedMonthYear]);
 
     // --- CÁC HÀM GHI NHẬN (LOGGING) ---
 
@@ -421,6 +421,8 @@ export function useFinanceTracker() {
         updateWorkPerformance,
         deleteTransaction,
         resetFinanceData,
+        selectedMonthYear,
+        setSelectedMonthYear,
         stats: {
             currentBalance,
             totalOTHours,
