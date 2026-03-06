@@ -2,10 +2,11 @@ import { Fragment, useState, useEffect, useRef } from 'react';
 import { Room, Tenant, Bill, RoomStatus, Asset } from '../types';
 import { calculateBill, formatCurrency } from '../utils/calculations';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, Trash2, Upload, Pencil } from 'lucide-react';
+import { X, Trash2, Upload, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import AssetManagement from './AssetManagement';
+import ImageLightboxModal from './ImageLightboxModal';
 
 interface RoomDetailModalProps {
     isOpen: boolean;
@@ -67,6 +68,9 @@ export default function RoomDetailModal({
     const [waterNew, setWaterNew] = useState(0);
     const [calculatedBill, setCalculatedBill] = useState<any>(null);
     const [editingBill, setEditingBill] = useState<Bill | null>(null);
+    const [expandedTenantId, setExpandedTenantId] = useState<string | null>(null);
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
     // Ref for the hidden bill invoice
     const billRef = useRef<HTMLDivElement>(null);
@@ -465,24 +469,60 @@ export default function RoomDetailModal({
                                                             <p className="text-xs text-gray-500 italic">Chưa có khách nào.</p>
                                                         ) : (
                                                             roomTenants.map(t => (
-                                                                <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                                    <div>
-                                                                        <p className="font-bold text-base text-gray-900">{t.name}</p>
-                                                                        <p className="text-sm font-medium text-gray-700">{t.phone}</p>
+                                                                <div key={t.id} className="flex flex-col p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                                    <div
+                                                                        className="flex justify-between items-center cursor-pointer"
+                                                                        onClick={() => setExpandedTenantId(expandedTenantId === t.id ? null : t.id)}
+                                                                    >
+                                                                        <div>
+                                                                            <p className="font-bold text-base text-gray-900">{t.name}</p>
+                                                                            <p className="text-sm font-medium text-gray-700">{t.phone}</p>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleRemoveTenant(t.id);
+                                                                                }}
+                                                                                className="text-red-500 hover:text-red-700 p-1"
+                                                                                title="Xóa khách thuê"
+                                                                                aria-label="Xóa khách thuê"
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </button>
+                                                                            {expandedTenantId === t.id ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        {t.identityCardImage && (
-                                                                            <img src={t.identityCardImage} alt="ID" className="h-8 w-12 object-cover rounded border" />
-                                                                        )}
-                                                                        <button
-                                                                            onClick={() => handleRemoveTenant(t.id)}
-                                                                            className="text-red-500 hover:text-red-700"
-                                                                            title="Xóa khách thuê"
-                                                                            aria-label="Xóa khách thuê"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </button>
-                                                                    </div>
+                                                                    {expandedTenantId === t.id && (
+                                                                        <div className="mt-4 pt-3 border-t border-gray-200 text-sm animate-in fade-in slide-in-from-top-1">
+                                                                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                                                                <div>
+                                                                                    <p className="text-gray-500 text-xs">Ngày bắt đầu:</p>
+                                                                                    <p className="font-medium text-gray-900">{t.startDate}</p>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <p className="text-gray-500 text-xs">Tiền cọc:</p>
+                                                                                    <p className="font-medium text-gray-900">{formatCurrency(t.deposit)}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-gray-500 text-xs mb-1">Hình ảnh CCCD:</p>
+                                                                                {t.identityCardImage ? (
+                                                                                    <img
+                                                                                        src={t.identityCardImage}
+                                                                                        alt="CCCD"
+                                                                                        onClick={() => {
+                                                                                            setLightboxImage(t.identityCardImage || null);
+                                                                                            setIsLightboxOpen(true);
+                                                                                        }}
+                                                                                        className="h-24 w-36 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                                                                                    />
+                                                                                ) : (
+                                                                                    <p className="text-xs text-gray-400 italic">Không có ảnh CCCD</p>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))
                                                         )}
@@ -841,6 +881,12 @@ export default function RoomDetailModal({
                     </div>
                 )
             }
+
+            <ImageLightboxModal
+                isOpen={isLightboxOpen}
+                onClose={() => setIsLightboxOpen(false)}
+                imageUrl={lightboxImage}
+            />
         </Fragment >
     );
 }

@@ -3,7 +3,9 @@ import { Tenant, Room } from '../types';
 import { formatCurrency } from '../utils/calculations';
 import { Pencil, Trash2, Download } from 'lucide-react';
 import TenantEditModal from './TenantEditModal';
-import * as XLSX from 'xlsx';
+import ImageLightboxModal from './ImageLightboxModal';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface TenantListProps {
     tenants: Tenant[];
@@ -15,6 +17,8 @@ interface TenantListProps {
 export default function TenantList({ tenants, rooms, onUpdateTenant, onRemoveTenant }: TenantListProps) {
     const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
     const getRoomNumber = (roomId: string) => {
         return rooms.find((r) => r.id === roomId)?.roomNumber || 'Unknown';
@@ -35,19 +39,80 @@ export default function TenantList({ tenants, rooms, onUpdateTenant, onRemoveTen
         onUpdateTenant(updatedTenant);
     };
 
-    const handleExportExcel = () => {
-        const data = tenants.map(t => ({
-            'Họ tên': t.name,
-            'Phòng': getRoomNumber(t.roomId),
-            'Số điện thoại': t.phone,
-            'Ngày bắt đầu': t.startDate,
-            'Tiền cọc': t.deposit
-        }));
+    const handleExportExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('KhachThue');
 
-        const worksheet = XLSX.utils.json_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "KhachThue");
-        XLSX.writeFile(workbook, "DanhSachKhachThue.xlsx");
+        // Set columns
+        worksheet.columns = [
+            { header: 'Họ tên', key: 'name', width: 25 },
+            { header: 'Phòng', key: 'roomNumber', width: 10 },
+            { header: 'Số điện thoại', key: 'phone', width: 15 },
+            { header: 'Ngày bắt đầu', key: 'startDate', width: 15 },
+            { header: 'Tiền cọc', key: 'deposit', width: 15 },
+            { header: 'CCCD', key: 'identityCardImage', width: 25 }
+        ];
+
+        // Style headers
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+        for (let i = 0; i < tenants.length; i++) {
+            const t = tenants[i];
+            const rowNumber = i + 2; // Since row 1 is header
+            const row = worksheet.getRow(rowNumber);
+
+            row.values = {
+                name: t.name,
+                roomNumber: getRoomNumber(t.roomId),
+                phone: t.phone,
+                startDate: t.startDate,
+                deposit: t.deposit,
+            };
+
+            if (t.identityCardImage) {
+                row.height = 70;
+
+                try {
+                    let base64Image = t.identityCardImage;
+                    let extension = 'png';
+
+                    if (base64Image.includes('data:image/jpeg')) extension = 'jpeg';
+                    else if (base64Image.includes('data:image/jpg')) extension = 'jpeg';
+
+                    const base64Data = base64Image.split(',')[1] || base64Image;
+
+                    const imageId = workbook.addImage({
+                        base64: base64Data,
+                        extension: extension as any,
+                    });
+
+                    // Căn chỉnh ảnh vào ô (tl = top-left corner index)
+                    // Cột index từ 0 (cột CCCD là 5)
+                    worksheet.addImage(imageId, {
+                        tl: { col: 5, row: rowNumber - 1 },
+                        ext: { width: 140, height: 80 },
+                        editAs: 'oneCell'
+                    });
+                } catch (e) {
+                    console.error("Error adding image to excel", e);
+                }
+            } else {
+                row.height = 30; // default height cho dòng ko ảnh
+            }
+
+            // Alignments
+            row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                cell.alignment = { vertical: 'middle', horizontal: colNumber === 6 ? 'center' : 'left' };
+                if (colNumber === 5) { // Cột tiền cọc
+                    cell.numFmt = '#,##0';
+                }
+            });
+        }
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, 'DanhSachKhachThue.xlsx');
     };
 
     return (
@@ -110,7 +175,11 @@ export default function TenantList({ tenants, rooms, onUpdateTenant, onRemoveTen
                                     <img
                                         src={tenant.identityCardImage}
                                         alt="CCCD"
-                                        className="h-10 w-16 object-cover rounded border border-gray-200 cursor-pointer hover:scale-150 transition-transform origin-left"
+                                        onClick={() => {
+                                            setLightboxImage(tenant.identityCardImage || null);
+                                            setIsLightboxOpen(true);
+                                        }}
+                                        className="h-10 w-16 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
                                     />
                                 ) : (
                                     <span className="text-gray-400 text-xs">Không có ảnh</span>
@@ -146,6 +215,12 @@ export default function TenantList({ tenants, rooms, onUpdateTenant, onRemoveTen
                 onClose={() => setIsEditModalOpen(false)}
                 tenant={selectedTenant}
                 onSave={handleSaveTenant}
+            />
+
+            <ImageLightboxModal
+                isOpen={isLightboxOpen}
+                onClose={() => setIsLightboxOpen(false)}
+                imageUrl={lightboxImage}
             />
         </div>
     );
