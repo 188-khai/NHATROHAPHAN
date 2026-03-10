@@ -729,7 +729,7 @@ export default function RoomDetailModal({
                                                                                         {new Date(bill.date).toLocaleDateString('vi-VN')}
                                                                                     </td>
                                                                                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                                                        {bill.electricityOld} - {bill.electricityNew}
+                                                                                        {bill.electricityNew} - {bill.electricityOld}
                                                                                     </td>
                                                                                     <td className="whitespace-nowrap px-3 py-4 text-base text-indigo-700 font-extrabold">
                                                                                         {formatCurrency(bill.totalAmount)}
@@ -815,7 +815,7 @@ export default function RoomDetailModal({
                                     <tbody className="text-sm">
                                         <tr style={{ borderBottom: '1px solid #2a7f8533' }}>
                                             <td className="p-4 font-bold">Tiền điện</td>
-                                            <td className="p-4">{electricityOld} - {electricityNew}</td>
+                                            <td className="p-4">{electricityNew} - {electricityOld}</td>
                                             <td className="p-4">{calculatedBill.electricityUsage} số</td>
                                             <td className="p-4 text-right">{formatCurrency(calculatedBill.electricityCost)}</td>
                                         </tr>
@@ -840,7 +840,7 @@ export default function RoomDetailModal({
                                     </tbody>
                                     <tfoot>
                                         <tr style={{ backgroundColor: '#F9F7F2' }}>
-                                            <td colSpan={3} className="p-4 text-right font-bold text-xl">TỔNG CỘNG</td>
+                                            <td colSpan={3} className="p-4 text-right pr-6 font-bold text-xl uppercase text-[#4b5563]">Tổng cộng</td>
                                             <td style={{ color: '#124E57' }} className="p-4 text-right font-bold text-xl">{formatCurrency(calculatedBill.totalAmount)}</td>
                                         </tr>
                                     </tfoot>
@@ -856,7 +856,7 @@ export default function RoomDetailModal({
                                 </div>
 
                                 {/* Right: Amount & Bank Details */}
-                                <div className="text-right flex-[2]">
+                                <div className="text-right flex-[2] pr-4">
                                     <p className="text-lg mb-2">Thành tiền</p>
                                     <p style={{ color: '#124E57' }} className="text-[2.5rem] font-bold font-serif mb-4">{formatCurrency(calculatedBill.totalAmount)}</p>
 
