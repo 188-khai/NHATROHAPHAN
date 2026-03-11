@@ -2,7 +2,7 @@ import { Fragment, useState, useEffect, useRef } from 'react';
 import { Room, Tenant, Bill, RoomStatus, Asset } from '../types';
 import { calculateBill, formatCurrency } from '../utils/calculations';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, Trash2, Upload, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Plus, Trash2, Pencil, CalendarDays, Camera, RefreshCw, Eye, ChevronUp, ChevronDown, Upload } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import AssetManagement from './AssetManagement';
@@ -256,6 +256,29 @@ export default function RoomDetailModal({
                 setWaterNew(0);
             }
         }
+    };
+
+    const handleViewBillFromHistory = (bill: Bill) => {
+        // We simulate a calculatedBill state so the invoice template renders it fully
+        const simulatedCalculation = {
+            electricityUsage: bill.electricityNew - bill.electricityOld,
+            electricityCost: (bill.electricityNew - bill.electricityOld) * bill.electricityRate!,
+            waterCost: bill.waterRate! * roomTenants.length, // Rough approx if rate changed, but we rely on what is saved
+            garbageFee: bill.garbageFee!,
+            roomPrice: bill.totalAmount - ((bill.electricityNew - bill.electricityOld) * bill.electricityRate!) - (bill.waterRate! * roomTenants.length) - bill.garbageFee!,
+            totalAmount: bill.totalAmount,
+        };
+        
+        // Temporarily set states to show this bill
+        setElectricityOld(bill.electricityOld);
+        setElectricityNew(bill.electricityNew);
+        setWaterOld(bill.waterOld || 0);
+        setWaterNew(bill.waterNew || 0);
+        setCalculatedBill(simulatedCalculation);
+        
+        // Scroll to the invoice preview
+        const billElement = document.getElementById('bill-preview');
+        if (billElement) billElement.scrollIntoView({ behavior: 'smooth' });
     };
 
     const handleDeleteBill = (billId: string) => {
@@ -599,16 +622,6 @@ export default function RoomDetailModal({
                                                         )}
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <div>
-                                                                <label className="block text-sm font-medium text-gray-700">Điện cũ</label>
-                                                                <input
-                                                                    type="number"
-                                                                    value={electricityOld === 0 ? '' : electricityOld}
-                                                                    placeholder="0"
-                                                                    onChange={(e) => setElectricityOld(Number(e.target.value))}
-                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm border p-2 text-black placeholder:text-gray-500"
-                                                                />
-                                                            </div>
-                                                            <div>
                                                                 <label className="block text-sm font-medium text-gray-700">Điện mới</label>
                                                                 <input
                                                                     type="number"
@@ -619,12 +632,12 @@ export default function RoomDetailModal({
                                                                 />
                                                             </div>
                                                             <div>
-                                                                <label className="block text-sm font-medium text-gray-700">Nước cũ</label>
+                                                                <label className="block text-sm font-medium text-gray-700">Điện cũ</label>
                                                                 <input
                                                                     type="number"
-                                                                    value={waterOld === 0 ? '' : waterOld}
+                                                                    value={electricityOld === 0 ? '' : electricityOld}
                                                                     placeholder="0"
-                                                                    onChange={(e) => setWaterOld(Number(e.target.value))}
+                                                                    onChange={(e) => setElectricityOld(Number(e.target.value))}
                                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm border p-2 text-black placeholder:text-gray-500"
                                                                 />
                                                             </div>
@@ -635,6 +648,16 @@ export default function RoomDetailModal({
                                                                     value={waterNew === 0 ? '' : waterNew}
                                                                     placeholder="0"
                                                                     onChange={(e) => setWaterNew(Number(e.target.value))}
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm border p-2 text-black placeholder:text-gray-500"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700">Nước cũ</label>
+                                                                <input
+                                                                    type="number"
+                                                                    value={waterOld === 0 ? '' : waterOld}
+                                                                    placeholder="0"
+                                                                    onChange={(e) => setWaterOld(Number(e.target.value))}
                                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm border p-2 text-black placeholder:text-gray-500"
                                                                 />
                                                             </div>
@@ -736,6 +759,13 @@ export default function RoomDetailModal({
                                                                                     </td>
                                                                                     <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
                                                                                         <div className="flex justify-end gap-2">
+                                                                                            <button
+                                                                                                onClick={() => handleViewBillFromHistory(bill)}
+                                                                                                className="text-gray-500 hover:text-gray-700"
+                                                                                                title="Xem hóa đơn"
+                                                                                            >
+                                                                                                <Eye className="h-4 w-4" />
+                                                                                            </button>
                                                                                             <button
                                                                                                 onClick={() => handleEditBill(bill)}
                                                                                                 className="text-indigo-600 hover:text-indigo-900"
