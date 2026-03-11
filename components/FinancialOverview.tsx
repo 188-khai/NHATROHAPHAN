@@ -1,4 +1,4 @@
-
+import { Fragment, useState } from 'react';
 import { Bill, Room, Tenant } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { formatCurrency } from '../utils/calculations';
@@ -36,8 +36,16 @@ export default function FinancialOverview({ bills, rooms, tenants, onEditBill, o
 
     const chartData = getLast12MonthsData();
 
-    // 2. Prepare data for the history table (All bills sorted by date desc)
-    const sortedBills = [...bills].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // 2. Prepare data for the history table
+    // Default to current month if no filter is selected. Let users choose 'all' or specific month.
+    const [selectedMonth, setSelectedMonth] = useState<string>(''); // YYYY-MM
+    
+    const filteredBills = bills.filter(bill => {
+        if (!selectedMonth) return true; // show all by default
+        return bill.date.startsWith(selectedMonth);
+    });
+
+    const sortedBills = [...filteredBills].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     const getRoomNumber = (roomId: string) => {
         return rooms.find(r => r.id === roomId)?.roomNumber || 'Unknown';
@@ -70,9 +78,29 @@ export default function FinancialOverview({ bills, rooms, tenants, onEditBill, o
 
             {/* History Table Section */}
             <div className="bg-white shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Lịch sử thu tiền</h3>
-                    <p className="mt-1 max-w-2xl text-sm text-gray-500">Chi tiết các hóa đơn đã lập.</p>
+                <div className="px-4 py-5 sm:px-6 flex justify-between items-center sm:flex-row flex-col">
+                    <div>
+                        <h3 className="text-lg leading-6 font-medium text-gray-900">Lịch sử thu tiền</h3>
+                        <p className="mt-1 max-w-2xl text-sm text-gray-500">Chi tiết các hóa đơn đã lập.</p>
+                    </div>
+                    <div className="mt-4 sm:mt-0 flex items-center gap-2">
+                        <label htmlFor="month-filter" className="text-sm font-medium text-gray-700">Lọc theo tháng:</label>
+                        <input
+                            type="month"
+                            id="month-filter"
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="block w-full sm:w-auto rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        />
+                        {selectedMonth && (
+                            <button 
+                                onClick={() => setSelectedMonth('')}
+                                className="text-sm text-indigo-600 hover:text-indigo-900"
+                            >
+                                Xóa bộ lọc
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">

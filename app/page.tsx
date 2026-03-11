@@ -13,6 +13,7 @@ import BatchBillingModal from '@/components/BatchBillingModal';
 import ElectricityReconciliationModal from '@/components/ElectricityReconciliationModal';
 import DataMigrationModal from '@/components/DataMigrationModal';
 import RevenueChart from '@/components/RevenueChart';
+import AddRoomModal from '@/components/AddRoomModal';
 
 import FinanceTracker from '@/components/finance/FinanceTracker';
 
@@ -28,6 +29,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBatchBillingOpen, setIsBatchBillingOpen] = useState(false);
   const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
+  const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
   const [activeView, setActiveView] = useState<'rooms' | 'tenants' | 'finance'>('rooms');
 
   // Show loading state
@@ -234,7 +236,13 @@ export default function Home() {
             </div>
           )}
 
-        <div className="flex gap-3 mb-8">
+        <div className="flex flex-wrap gap-3 mb-8">
+          <button
+            onClick={() => setIsAddRoomModalOpen(true)}
+            className="inline-flex items-center rounded-md border border-transparent bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            + Thêm phòng mới
+          </button>
           <button
             onClick={() => setIsBatchBillingOpen(true)}
             className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -347,6 +355,21 @@ export default function Home() {
           onClose={() => setIsReconciliationModalOpen(false)}
           bills={bills}
           rooms={rooms}
+        />
+
+        <AddRoomModal
+          isOpen={isAddRoomModalOpen}
+          onClose={() => setIsAddRoomModalOpen(false)}
+          onSave={async (roomData) => {
+            const newRoom: Room = {
+              id: crypto.randomUUID(),
+              roomNumber: roomData.roomNumber!,
+              price: roomData.price!,
+              status: roomData.status as any,
+              tenantIds: []
+            };
+            await saveRoom(newRoom);
+          }}
         />
 
         <DataMigrationModal />
