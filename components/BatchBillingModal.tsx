@@ -234,6 +234,8 @@ export default function BatchBillingModal({
                                                         <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase sm:pl-6 w-10">
                                                             <input
                                                                 type="checkbox"
+                                                                title="Chọn phòng"
+                                                                aria-label="Chọn phòng tính tiền"
                                                                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                                 checked={billingData.every(i => i.isSelected)}
                                                                 onChange={(e) => {
@@ -245,7 +247,9 @@ export default function BatchBillingModal({
                                                         <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase">Phòng</th>
                                                         <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Khách</th>
                                                         <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Điện cũ</th>
-                                                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase w-32">Điện mới</th>
+                                                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase w-24">Điện mới</th>
+                                                        <th scope="col" className="px-3 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Tiền Nước</th>
+                                                        <th scope="col" className="px-3 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Tiền Rác</th>
                                                         <th scope="col" className="px-3 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Thành tiền</th>
                                                         <th scope="col" className="px-3 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">Zalo</th>
                                                     </tr>
@@ -256,6 +260,8 @@ export default function BatchBillingModal({
                                                             <td className="relative whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
                                                                 <input
                                                                     type="checkbox"
+                                                                    title={`Chọn phòng ${item.roomNumber}`}
+                                                                    aria-label={`Chọn phòng ${item.roomNumber}`}
                                                                     className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                                     checked={item.isSelected}
                                                                     onChange={() => handleToggleSelect(item.roomId)}
@@ -280,7 +286,13 @@ export default function BatchBillingModal({
                                                                     disabled={!item.isSelected}
                                                                 />
                                                             </td>
-                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-bold text-indigo-600">
+                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500 border-l border-gray-100">
+                                                                {formatCurrency(item.tenantCount * 30000)}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500">
+                                                                {formatCurrency(20000)}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-bold text-indigo-600 border-l border-gray-100">
                                                                 {formatCurrency(calculateRoomTotal(item))}
                                                             </td>
                                                             <td className="whitespace-nowrap px-3 py-4 text-sm text-center">
