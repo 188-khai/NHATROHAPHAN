@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import { Room, Tenant, Bill, Asset } from "@/types";
+import { Room, Tenant, Bill, Asset, TaxSettings } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 
 // Mappers to convert DB (snake_case) <-> App (camelCase)
@@ -101,6 +101,34 @@ const mapAssetToDB = (asset: Asset) => ({
     image: asset.image,
 });
 
+const mapTaxSettingsFromDB = (data: any): TaxSettings => ({
+    id: data.id,
+    userId: data.user_id,
+    year: data.year,
+    expectedRoomCount: data.expected_room_count,
+    expectedAvgPrice: data.expected_avg_price,
+    paymentFrequency: data.payment_frequency,
+    servicesIncluded: data.services_included || [],
+    isShortTerm: data.is_short_term,
+    classification: data.classification,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
+});
+
+const mapTaxSettingsToDB = (settings: TaxSettings) => ({
+    id: settings.id,
+    user_id: settings.userId,
+    year: settings.year,
+    expected_room_count: settings.expectedRoomCount,
+    expected_avg_price: settings.expectedAvgPrice,
+    payment_frequency: settings.paymentFrequency,
+    services_included: settings.servicesIncluded,
+    is_short_term: settings.isShortTerm,
+    classification: settings.classification,
+    created_at: settings.createdAt,
+    updated_at: settings.updatedAt
+});
+
 export function useSupabaseData() {
     const { user } = useAuth();
 
@@ -108,6 +136,7 @@ export function useSupabaseData() {
     const [tenants, setTenants] = useState<Tenant[]>([]);
     const [bills, setBills] = useState<Bill[]>([]);
     const [assets, setAssets] = useState<Asset[]>([]);
+    const [taxSettings, setTaxSettings] = useState<TaxSettings | null>(null);
     const [loading, setLoading] = useState(true);
 
     // Helper to sort rooms numerically (e.g. "P.10" < "P.2")
@@ -129,11 +158,12 @@ export function useSupabaseData() {
             if (isInitial) setLoading(true);
             try {
                 if (!supabase) return;
-                const [roomsRes, tenantsRes, billsRes, assetsRes] = await Promise.all([
+                const [roomsRes, tenantsRes, billsRes, assetsRes, taxRes] = await Promise.all([
                     supabase.from("rooms").select("*").order('room_number', { ascending: true }),
                     supabase.from("tenants").select("*"),
                     supabase.from("bills").select("*"),
                     supabase.from("assets").select("*"),
+                    supabase.from("tax_settings").select("*").order("year", { ascending: false }).limit(1),
                 ]);
 
                 if (roomsRes.data) {
@@ -143,6 +173,7 @@ export function useSupabaseData() {
                 if (tenantsRes.data) setTenants(tenantsRes.data.map(mapTenantFromDB));
                 if (billsRes.data) setBills(billsRes.data.map(mapBillFromDB));
                 if (assetsRes.data) setAssets(assetsRes.data.map(mapAssetFromDB));
+                if (taxRes.data && taxRes.data.length > 0) setTaxSettings(mapTaxSettingsFromDB(taxRes.data[0]));
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -256,12 +287,26 @@ export function useSupabaseData() {
         setAssets(prev => prev.filter(a => a.id !== id));
     };
 
+    // --- Tax Settings ---
+    const saveTaxSettings = async (settings: TaxSettings) => {
+        if (!supabase) return;
+        const exists = taxSettings && taxSettings.id === settings.id;
+        if (exists) {
+            await supabase.from("tax_settings").update(mapTaxSettingsToDB(settings)).eq("id", settings.id);
+            setTaxSettings(settings);
+        } else {
+            await supabase.from("tax_settings").insert(mapTaxSettingsToDB(settings));
+            setTaxSettings(settings);
+        }
+    };
+
 
     return {
         rooms,
         tenants,
         bills,
         assets,
+        taxSettings,
         loading,
         saveRoom,
         deleteRoom,
@@ -271,6 +316,7 @@ export function useSupabaseData() {
         saveBills,
         deleteBill,
         saveAsset,
-        deleteAsset
+        deleteAsset,
+        saveTaxSettings
     };
 }

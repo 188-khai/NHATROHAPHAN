@@ -1,19 +1,20 @@
 import { Fragment, useState } from 'react';
-import { Bill, Room, Tenant } from '../types';
+import { Bill, Room, Tenant, TaxSettings } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { formatCurrency } from '../utils/calculations';
 
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, FileText, Smartphone, CheckCircle } from 'lucide-react';
 
 interface FinancialOverviewProps {
     bills: Bill[];
     rooms: Room[];
     tenants: Tenant[];
+    taxSettings?: TaxSettings | null;
     onEditBill: (bill: Bill) => void;
     onDeleteBill: (billId: string) => void;
 }
 
-export default function FinancialOverview({ bills, rooms, tenants, onEditBill, onDeleteBill }: FinancialOverviewProps) {
+export default function FinancialOverview({ bills, rooms, tenants, taxSettings, onEditBill, onDeleteBill }: FinancialOverviewProps) {
     // 1. Prepare data for the chart (Last 12 months revenue)
     const getLast12MonthsData = () => {
         const months = [];
@@ -57,8 +58,74 @@ export default function FinancialOverview({ bills, rooms, tenants, onEditBill, o
         }
     };
 
+    // 3. Tax & NOI Calculations
+    let monthlyTaxProvision = 0;
+    if (taxSettings) {
+        const grossRevenue = taxSettings.expectedRoomCount * taxSettings.expectedAvgPrice * 12;
+        if (grossRevenue > 500000000) {
+            const vat = grossRevenue * 0.05;
+            const pit = (grossRevenue - 500000000) * 0.05;
+            monthlyTaxProvision = (vat + pit) / 12;
+        }
+    }
+
+    const currentPeriodRevenue = filteredBills.reduce((sum, b) => sum + b.totalAmount, 0);
+    const noi = currentPeriodRevenue - monthlyTaxProvision;
+
     return (
         <div className="space-y-8 mt-6">
+            {/* NOI Summary & eTax Guide */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                    <h3 className="text-lg font-medium opacity-90 mb-4">
+                        Lãi Ròng (NOI) {selectedMonth ? `Tháng ${selectedMonth}` : 'Kì Vừa Trích Lọc'}
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-white/10 rounded-lg p-4">
+                            <p className="text-sm opacity-80 mb-1">Thực Thu Hóa Đơn</p>
+                            <p className="text-xl font-bold">{formatCurrency(currentPeriodRevenue)}</p>
+                        </div>
+                        <div className="bg-white/10 rounded-lg p-4">
+                            <p className="text-sm opacity-80 mb-1">Dự Phòng Thuế</p>
+                            <p className="text-xl font-bold text-red-100">-{formatCurrency(monthlyTaxProvision)}</p>
+                            {taxSettings ? (
+                                <p className="text-xs opacity-75 mt-1">Trích lập tự động 1/12</p>
+                            ) : (
+                                <p className="text-xs opacity-75 mt-1">Chưa có cấu hình</p>
+                            )}
+                        </div>
+                        <div className="bg-white/20 rounded-lg p-4 border border-white/30">
+                            <p className="text-sm opacity-80 mb-1">Lãi Ròng (NOI)</p>
+                            <p className="text-2xl font-extrabold">{formatCurrency(noi)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white border rounded-xl shadow-sm p-5">
+                    <h3 className="text-md font-bold text-gray-900 flex items-center gap-2 mb-3 border-b pb-2">
+                        <Smartphone className="w-5 h-5 text-indigo-600" /> Hướng dẫn khai eTax Mobile
+                    </h3>
+                    <ul className="text-sm text-gray-600 space-y-2 mb-4">
+                        <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span>Bước 1: Tải eTax Mobile & Đăng nhập bằng VNeID</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span>Bước 2: Chọn "Nộp thuế điện tử" {'>'} "Khác"</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span>Bước 3: Lập tờ khai Mẫu số 01/TTS</span>
+                        </li>
+                    </ul>
+                    <a href="https://canhan.gdt.gov.vn" target="_blank" rel="noopener noreferrer" className="inline-flex w-full justify-center items-center px-4 py-2 border border-indigo-600 text-sm font-medium rounded-md text-indigo-600 hover:bg-indigo-50">
+                        <FileText className="w-4 h-4 mr-2" />
+                        Tải Mẫu 01-1/BK-TTS
+                    </a>
+                </div>
+            </div>
+
             {/* Chart Section */}
             <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Biểu đồ dòng tiền (12 tháng qua)</h3>

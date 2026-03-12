@@ -92,3 +92,20 @@ export interface WorkPerformance {
     currentIncome: number;
     userId?: string;
 }
+
+export type TaxPaymentFrequency = 'monthly' | 'quarterly' | 'yearly';
+export type TaxClassificationAction = 'Dịch Vụ Lưu Trú' | 'Cho Thuê Tài Sản';
+
+export interface TaxSettings {
+    id: string; // uuid
+    userId?: string;
+    year: number; // e.g., 2026
+    expectedRoomCount: number;
+    expectedAvgPrice: number;
+    paymentFrequency: TaxPaymentFrequency;
+    servicesIncluded: string[]; // e.g., ['Dọn phòng', 'Lễ tân']
+    isShortTerm: boolean;
+    classification: TaxClassificationAction;
+    createdAt: string;
+    updatedAt: string;
+}

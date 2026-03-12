@@ -14,15 +14,16 @@ import ElectricityReconciliationModal from '@/components/ElectricityReconciliati
 import DataMigrationModal from '@/components/DataMigrationModal';
 import RevenueChart from '@/components/RevenueChart';
 import AddRoomModal from '@/components/AddRoomModal';
+import TaxDashboard from '@/components/TaxDashboard';
 
 import FinanceTracker from '@/components/finance/FinanceTracker';
 
 export default function Home() {
   const {
-    rooms, tenants, bills, assets, loading,
+    rooms, tenants, bills, assets, taxSettings, loading,
     saveRoom, saveTenant, deleteTenant,
     saveBill, saveBills, deleteBill,
-    saveAsset, deleteAsset
+    saveAsset, deleteAsset, saveTaxSettings
   } = useSupabaseData(); // Use Supabase Hook
 
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -30,7 +31,7 @@ export default function Home() {
   const [isBatchBillingOpen, setIsBatchBillingOpen] = useState(false);
   const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
   const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'rooms' | 'tenants' | 'finance'>('rooms');
+  const [activeView, setActiveView] = useState<'rooms' | 'tenants' | 'finance' | 'tax'>('rooms');
 
   // Show loading state
 
@@ -287,6 +288,15 @@ export default function Home() {
               >
                 Cá Nhân (Lương & OT)
               </button>
+              <button
+                onClick={() => setActiveView('tax')}
+                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeView === 'tax'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                Hồ Sơ Thuế & Lợi Nhuận
+              </button>
             </nav>
           </div>
 
@@ -298,6 +308,7 @@ export default function Home() {
                 bills={bills}
                 rooms={rooms}
                 tenants={tenants}
+                taxSettings={taxSettings}
                 onEditBill={handleEditBillFromHistory}
                 onDeleteBill={handleDeleteBill}
               />
@@ -310,9 +321,13 @@ export default function Home() {
                 />
               </div>
             </div>
-          ) : (
+          ) : activeView === 'finance' ? (
             <div className="mt-6">
               <FinanceTracker />
+            </div>
+          ) : (
+            <div className="mt-6">
+              <TaxDashboard taxSettings={taxSettings} onSaveSettings={saveTaxSettings} />
             </div>
           )}
         </div>
