@@ -29,8 +29,20 @@ export interface Bill {
     electricityRate: number; // 3500
     waterRate: number; // 30000 per person
     garbageFee: number; // 20000
+    wifiFee?: number; // 50000
+    otherServices?: { name: string; amount: number }[];
     totalAmount: number;
     isPaid: boolean;
+}
+
+export type ServiceUnit = 'kwh' | 'person' | 'month' | 'room';
+
+export interface ServiceRate {
+    id: string;
+    name: string;
+    amount: number;
+    unit: ServiceUnit;
+    description?: string;
 }
 
 export type AssetStatus = 'new' | 'good' | 'maintenance' | 'broken';

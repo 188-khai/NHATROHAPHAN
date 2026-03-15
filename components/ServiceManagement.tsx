@@ -1,0 +1,218 @@
+import { useState } from 'react';
+import { Plus, Pencil, Trash2, Tag, CheckCircle2 } from 'lucide-react';
+import { ServiceRate, ServiceUnit } from '../types';
+import { formatCurrency } from '../utils/calculations';
+
+interface ServiceManagementProps {
+    serviceRates: ServiceRate[];
+    roomCount: number;
+    onSaveServiceRate: (rate: ServiceRate) => void;
+    onDeleteServiceRate: (id: string) => void;
+}
+
+export default function ServiceManagement({
+    serviceRates,
+    roomCount,
+    onSaveServiceRate,
+    onDeleteServiceRate,
+}: ServiceManagementProps) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingRate, setEditingRate] = useState<ServiceRate | null>(null);
+
+    const [formName, setFormName] = useState('');
+    const [formAmount, setFormAmount] = useState(0);
+    const [formUnit, setFormUnit] = useState<ServiceUnit>('month');
+    const [formDescription, setFormDescription] = useState('');
+
+    const openModal = (rate?: ServiceRate) => {
+        if (rate) {
+            setEditingRate(rate);
+            setFormName(rate.name);
+            setFormAmount(rate.amount);
+            setFormUnit(rate.unit);
+            setFormDescription(rate.description || '');
+        } else {
+            setEditingRate(null);
+            setFormName('');
+            setFormAmount(0);
+            setFormUnit('month');
+            setFormDescription('');
+        }
+        setIsModalOpen(true);
+    };
+
+    const handleSave = () => {
+        if (!formName || formAmount <= 0) {
+            alert('Vui lòng nhập tên và đơn giá hợp lệ.');
+            return;
+        }
+
+        const newRate: ServiceRate = {
+            id: editingRate?.id || crypto.randomUUID(),
+            name: formName,
+            amount: formAmount,
+            unit: formUnit,
+            description: formDescription,
+        };
+
+        onSaveServiceRate(newRate);
+        setIsModalOpen(false);
+    };
+
+    const handleDelete = (id: string) => {
+        if (confirm('Bạn có chắc chắn muốn xóa dịch vụ này không?')) {
+            onDeleteServiceRate(id);
+        }
+    };
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <div className="w-1 h-8 bg-green-500 rounded-full"></div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900 leading-tight">Quản lý dịch vụ</h2>
+                        <p className="text-sm text-gray-500 italic">Các dịch vụ khách thuê xài</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => openModal()}
+                    className="p-3 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg shadow-green-100 transition-all active:scale-95"
+                    title="Thêm dịch vụ mới"
+                >
+                    <Plus className="w-6 h-6" />
+                </button>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {serviceRates.length === 0 ? (
+                    <div className="col-span-full py-12 text-center text-gray-400">
+                        <Tag className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p>Chưa có dịch vụ nào được cấu hình.</p>
+                        <button 
+                            onClick={() => openModal()}
+                            className="mt-4 text-green-600 font-medium hover:underline"
+                        >
+                            Thêm dịch vụ đầu tiên
+                        </button>
+                    </div>
+                ) : (
+                    serviceRates.map((rate) => (
+                        <div key={rate.id} className="group relative bg-white border border-gray-100 rounded-2xl p-5 flex items-center gap-4 transition-all hover:shadow-md hover:border-green-100">
+                            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 group-hover:bg-green-50 group-hover:text-green-500 transition-colors">
+                                <Tag className="w-6 h-6" />
+                            </div>
+                            
+                            <div className="flex-1">
+                                <h3 className="font-bold text-gray-900 text-lg">{rate.name}</h3>
+                                <p className="text-gray-600 font-medium">
+                                    {formatCurrency(rate.amount)}/{rate.unit === 'kwh' ? 'kWh' : rate.unit === 'person' ? 'Người' : 'Tháng'}
+                                </p>
+                                <p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-1 italic">
+                                    <CheckCircle2 className="w-3 h-3" /> Đang áp dụng cho {roomCount} phòng
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => openModal(rate)}
+                                    className="p-2 bg-gray-50 text-gray-500 rounded-full hover:bg-green-50 hover:text-green-600 transition-colors"
+                                    title="Sửa"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={() => handleDelete(rate.id)}
+                                    className="p-2 bg-gray-50 text-gray-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors"
+                                    title="Xóa"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900">
+                                {editingRate ? 'Cập nhật dịch vụ' : 'Thêm dịch vụ mới'}
+                            </h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600" title="Đóng">
+                                <Plus className="w-6 h-6 rotate-45" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Tên dịch vụ</label>
+                                <input
+                                    type="text"
+                                    placeholder="VD: Tiền Wifi (Người)"
+                                    value={formName}
+                                    onChange={(e) => setFormName(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-black"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Đơn giá (VNĐ)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="50000"
+                                        value={formAmount === 0 ? '' : formAmount}
+                                        onChange={(e) => setFormAmount(Number(e.target.value))}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-black"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Đơn vị</label>
+                                    <select
+                                        value={formUnit}
+                                        onChange={(e) => setFormUnit(e.target.value as ServiceUnit)}
+                                        title="Đơn vị tính"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-black bg-white"
+                                    >
+                                        <option value="month">Từng tháng</option>
+                                        <option value="person">Người</option>
+                                        <option value="kwh">kWh (Điện)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Ghi chú (tùy chọn)</label>
+                                <textarea
+                                    placeholder="Mô tả chi tiết..."
+                                    value={formDescription}
+                                    onChange={(e) => setFormDescription(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-black h-24 resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-gray-50 flex gap-3">
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="flex-1 px-4 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-100 transition-all"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="flex-1 px-4 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all shadow-lg shadow-green-100"
+                            >
+                                {editingRate ? 'Lưu cập nhật' : 'Xác nhận thêm'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

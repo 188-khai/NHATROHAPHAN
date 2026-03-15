@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { initialRooms, initialAssets } from '@/utils/seedData';
-import { Room, Tenant, Bill, Asset } from '@/types';
+import { Room, Tenant, Bill, Asset, ServiceRate } from '@/types';
 import DashboardStats from '@/components/DashboardStats';
 import RoomList from '@/components/RoomList';
 import TenantList from '@/components/TenantList';
@@ -15,15 +15,18 @@ import DataMigrationModal from '@/components/DataMigrationModal';
 import RevenueChart from '@/components/RevenueChart';
 import AddRoomModal from '@/components/AddRoomModal';
 import TaxDashboard from '@/components/TaxDashboard';
+import ServiceManagement from '@/components/ServiceManagement';
+import UsageReport from '@/components/UsageReport';
 
 import FinanceTracker from '@/components/finance/FinanceTracker';
 
 export default function Home() {
   const {
-    rooms, tenants, bills, assets, taxSettings, loading,
+    rooms, tenants, bills, assets, taxSettings, serviceRates, loading,
     saveRoom, saveTenant, deleteTenant,
     saveBill, saveBills, deleteBill,
-    saveAsset, deleteAsset, saveTaxSettings
+    saveAsset, deleteAsset, saveTaxSettings,
+    saveServiceRate, deleteServiceRate
   } = useSupabaseData(); // Use Supabase Hook
 
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -31,7 +34,7 @@ export default function Home() {
   const [isBatchBillingOpen, setIsBatchBillingOpen] = useState(false);
   const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
   const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'rooms' | 'tenants' | 'finance' | 'tax'>('rooms');
+  const [activeView, setActiveView] = useState<'rooms' | 'tenants' | 'finance' | 'tax' | 'services'>('rooms');
 
   // Show loading state
 
@@ -297,6 +300,15 @@ export default function Home() {
               >
                 Hồ Sơ Thuế & Lợi Nhuận
               </button>
+              <button
+                onClick={() => setActiveView('services')}
+                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeView === 'services'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                Dịch Vụ & Báo Cáo
+              </button>
             </nav>
           </div>
 
@@ -325,9 +337,23 @@ export default function Home() {
             <div className="mt-6">
               <FinanceTracker />
             </div>
-          ) : (
+          ) : activeView === 'tax' ? (
             <div className="mt-6">
               <TaxDashboard taxSettings={taxSettings} onSaveSettings={saveTaxSettings} />
+            </div>
+          ) : (
+            <div className="mt-8 space-y-8">
+              <ServiceManagement 
+                serviceRates={serviceRates} 
+                roomCount={rooms.length}
+                onSaveServiceRate={saveServiceRate}
+                onDeleteServiceRate={deleteServiceRate}
+              />
+              <UsageReport 
+                bills={bills} 
+                rooms={rooms} 
+                serviceRates={serviceRates}
+              />
             </div>
           )}
         </div>
@@ -343,6 +369,7 @@ export default function Home() {
             tenants={tenants}
             bills={bills}
             assets={assets}
+            serviceRates={serviceRates}
             onUpdateRoom={handleUpdateRoom}
             onUpdateTenant={handleUpdateTenant}
             onAddTenant={handleAddTenant}
@@ -362,6 +389,7 @@ export default function Home() {
           rooms={rooms}
           tenants={tenants}
           bills={bills}
+          serviceRates={serviceRates}
           onSaveBills={handleBatchSaveBills}
         />
 

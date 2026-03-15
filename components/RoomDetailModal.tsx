@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useRef } from 'react';
-import { Room, Tenant, Bill, RoomStatus, Asset } from '../types';
+import { Room, Tenant, Bill, RoomStatus, Asset, ServiceRate } from '../types';
 import { calculateBill, formatCurrency } from '../utils/calculations';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, Plus, Trash2, Pencil, CalendarDays, Camera, RefreshCw, Eye, ChevronUp, ChevronDown, Upload } from 'lucide-react';
@@ -24,6 +24,7 @@ interface RoomDetailModalProps {
     initialEditingBill?: Bill | null;
     initialActiveTab?: 'info' | 'tenants' | 'bill' | 'assets';
     assets?: Asset[];
+    serviceRates: ServiceRate[];
     onAddAsset?: (asset: Asset) => void;
     onUpdateAsset?: (asset: Asset) => void;
     onDeleteAsset?: (assetId: string) => void;
@@ -45,6 +46,7 @@ export default function RoomDetailModal({
     initialEditingBill = null,
     initialActiveTab = 'info',
     assets = [],
+    serviceRates,
     onAddAsset = () => { },
     onUpdateAsset = () => { },
     onDeleteAsset = () => { },
@@ -173,17 +175,55 @@ export default function RoomDetailModal({
 
     const handleCalculateBill = () => {
         if (!room) return;
-        const result = calculateBill(
-            electricityOld,
-            electricityNew,
-            roomTenants.length, // Pass number of tenants
-            room.price
+        
+        const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
+        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
+        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
+        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
+        const wifiIsPerPerson = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person';
+
+        const electricityUsage = Math.max(0, electricityNew - electricityOld);
+        const electricityCost = electricityUsage * elecRate;
+        const waterCost = roomTenants.length * waterRate;
+        const garbageFee = garbageRate;
+        const wifiFee = wifiIsPerPerson ? wifiRate * roomTenants.length : wifiRate;
+
+        // Other services
+        const otherServices = serviceRates.filter(r => 
+            !r.name.toLowerCase().includes('điện') && 
+            !r.name.toLowerCase().includes('nước') && 
+            !r.name.toLowerCase().includes('rác') && 
+            !r.name.toLowerCase().includes('wifi')
         );
-        setCalculatedBill(result);
+        const otherTotal = otherServices.reduce((sum, s) => {
+            if (s.unit === 'person') return sum + s.amount * roomTenants.length;
+            return sum + s.amount;
+        }, 0);
+
+        const totalAmount = electricityCost + waterCost + garbageFee + wifiFee + otherTotal + room.price;
+
+        setCalculatedBill({
+            electricityUsage,
+            electricityCost,
+            waterCost,
+            garbageFee,
+            wifiFee,
+            otherTotal,
+            otherServices: otherServices.map(s => ({
+                name: s.name,
+                amount: s.unit === 'person' ? s.amount * roomTenants.length : s.amount
+            })),
+            roomPrice: room.price,
+            totalAmount
+        });
     };
 
     // Helper to construct bill object
     const getBillPayload = (): Bill => {
+        const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
+        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
+        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
+
         if (editingBill) {
             return {
                 ...editingBill,
@@ -192,6 +232,8 @@ export default function RoomDetailModal({
                 waterOld,
                 waterNew,
                 totalAmount: calculatedBill.totalAmount,
+                wifiFee: calculatedBill.wifiFee,
+                otherServices: calculatedBill.otherServices
             };
         } else {
             return {
@@ -202,9 +244,11 @@ export default function RoomDetailModal({
                 electricityNew,
                 waterOld,
                 waterNew,
-                electricityRate: 3500,
-                waterRate: 30000,
-                garbageFee: 20000,
+                electricityRate: elecRate,
+                waterRate: waterRate * roomTenants.length, // Total water for the room
+                garbageFee: garbageRate,
+                wifiFee: calculatedBill.wifiFee,
+                otherServices: calculatedBill.otherServices,
                 totalAmount: calculatedBill.totalAmount,
                 isPaid: false
             };
@@ -662,7 +706,14 @@ export default function RoomDetailModal({
                                                                 />
                                                             </div>
                                                         </div>
-                                                        <p className="text-xs text-gray-500 italic">* Tiền nước: 30.000đ/người | Tiền rác: 20.000đ/phòng</p>
+                                                        <p className="text-xs text-gray-500 italic">* 
+                                                            {serviceRates.map((s, idx) => (
+                                                                <span key={s.id}>
+                                                                    {s.name}: {formatCurrency(s.amount)}/{s.unit === 'person' ? 'người' : s.unit === 'room' ? 'phòng' : s.unit}
+                                                                    {idx < serviceRates.length - 1 ? ' | ' : ''}
+                                                                </span>
+                                                            ))}
+                                                        </p>
                                                         <div className="flex gap-2">
                                                             <button
                                                                 onClick={handleCalculateBill}
@@ -683,8 +734,14 @@ export default function RoomDetailModal({
                                                         {calculatedBill && (
                                                             <div className="mt-4 bg-gray-50 p-4 rounded-md text-gray-900">
                                                                 <p className="flex justify-between text-sm"><span>Tiền điện ({calculatedBill.electricityUsage} số):</span> <span className="font-medium">{formatCurrency(calculatedBill.electricityCost)}</span></p>
-                                                                <p className="flex justify-between text-sm"><span>Tiền nước ({roomTenants.length} người):</span> <span className="font-medium">{formatCurrency(calculatedBill.waterCost)}</span></p>
+                                                                <p className="flex justify-between text-sm"><span>Tiền nước:</span> <span className="font-medium">{formatCurrency(calculatedBill.waterCost)}</span></p>
                                                                 <p className="flex justify-between text-sm"><span>Tiền rác:</span> <span className="font-medium">{formatCurrency(calculatedBill.garbageFee)}</span></p>
+                                                                {calculatedBill.wifiFee > 0 && (
+                                                                    <p className="flex justify-between text-sm"><span>Wifi:</span> <span className="font-medium">{formatCurrency(calculatedBill.wifiFee)}</span></p>
+                                                                )}
+                                                                {calculatedBill.otherServices && calculatedBill.otherServices.map((s: any, idx: number) => (
+                                                                    <p key={idx} className="flex justify-between text-sm"><span>{s.name}:</span> <span className="font-medium">{formatCurrency(s.amount)}</span></p>
+                                                                ))}
                                                                 <p className="flex justify-between text-sm"><span>Tiền phòng:</span> <span className="font-medium">{formatCurrency(room.price)}</span></p>
                                                                 <div className="border-t border-gray-200 my-2 pt-2">
                                                                     <p className="flex justify-between text-xl font-extrabold text-indigo-900"><span>Tổng cộng:</span> <span>{formatCurrency(calculatedBill.totalAmount)}</span></p>

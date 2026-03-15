@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
-import { Room, Tenant, Bill } from '../types';
+import { Room, Tenant, Bill, ServiceRate } from '../types';
 import { formatCurrency, generateZaloMessage } from '../utils/calculations';
 
 interface BatchBillingModalProps {
@@ -10,6 +10,7 @@ interface BatchBillingModalProps {
     rooms: Room[];
     tenants: Tenant[];
     bills: Bill[];
+    serviceRates: ServiceRate[];
     onSaveBills: (newBills: Bill[]) => void;
 }
 
@@ -29,6 +30,7 @@ export default function BatchBillingModal({
     rooms,
     tenants,
     bills,
+    serviceRates,
     onSaveBills,
 }: BatchBillingModalProps) {
     const [billingData, setBillingData] = useState<RoomBillingData[]>([]);
@@ -77,21 +79,57 @@ export default function BatchBillingModal({
     };
 
     const calculateRoomTotal = (item: RoomBillingData) => {
+        const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
+        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
+        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
+        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
+
         const electricityUsage = Math.max(0, item.electricityNew - item.electricityOld);
-        const electricityCost = electricityUsage * 3500;
-        const waterCost = item.tenantCount * 30000;
-        const garbageFee = 20000;
-        return electricityCost + waterCost + garbageFee + item.roomPrice;
+        const electricityCost = electricityUsage * elecRate;
+        const waterCost = item.tenantCount * waterRate;
+        const garbageFee = garbageRate;
+        const wifiFee = wifiRate * (serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person' ? item.tenantCount : 1);
+        
+        // Other services
+        const otherServices = serviceRates.filter(r => 
+            !r.name.toLowerCase().includes('điện') && 
+            !r.name.toLowerCase().includes('nước') && 
+            !r.name.toLowerCase().includes('rác') && 
+            !r.name.toLowerCase().includes('wifi')
+        );
+        const otherTotal = otherServices.reduce((sum, s) => {
+            if (s.unit === 'person') return sum + s.amount * item.tenantCount;
+            return sum + s.amount;
+        }, 0);
+
+        return electricityCost + waterCost + garbageFee + wifiFee + otherTotal + item.roomPrice;
     };
 
     const handleSave = () => {
         const selectedItems = billingData.filter((item) => item.isSelected);
+        const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
+        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
+        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
+        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
+
         const newBills: Bill[] = selectedItems.map((item) => {
             const electricityUsage = Math.max(0, item.electricityNew - item.electricityOld);
-            const electricityCost = electricityUsage * 3500;
-            const waterCost = item.tenantCount * 30000;
-            const garbageFee = 20000;
-            const totalAmount = electricityCost + waterCost + garbageFee + item.roomPrice;
+            const electricityCost = electricityUsage * elecRate;
+            const waterCost = item.tenantCount * waterRate;
+            const garbageFee = garbageRate;
+            const wifiFee = wifiRate * (serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person' ? item.tenantCount : 1);
+
+            const otherServices = serviceRates.filter(r => 
+                !r.name.toLowerCase().includes('điện') && 
+                !r.name.toLowerCase().includes('nước') && 
+                !r.name.toLowerCase().includes('rác') && 
+                !r.name.toLowerCase().includes('wifi')
+            ).map(s => ({
+                name: s.name,
+                amount: s.unit === 'person' ? s.amount * item.tenantCount : s.amount
+            }));
+
+            const totalAmount = calculateRoomTotal(item);
 
             return {
                 id: crypto.randomUUID(),
@@ -99,11 +137,13 @@ export default function BatchBillingModal({
                 date: new Date().toISOString(),
                 electricityOld: item.electricityOld,
                 electricityNew: item.electricityNew,
-                waterOld: 0, // Not used
-                waterNew: 0, // Not used
-                electricityRate: 3500,
-                waterRate: 30000, // Per person
-                garbageFee: 20000,
+                waterOld: 0,
+                waterNew: 0,
+                electricityRate: elecRate,
+                waterRate: waterCost, // We store total water cost here as per existing Bill structure
+                garbageFee: garbageFee,
+                wifiFee: wifiFee,
+                otherServices: otherServices,
                 totalAmount,
                 isPaid: false,
             };
@@ -118,12 +158,31 @@ export default function BatchBillingModal({
         .reduce((sum, item) => sum + calculateRoomTotal(item), 0);
 
     const handleSendZalo = async (item: RoomBillingData) => {
+        const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
+        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
+        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
+        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
+
         // Calculate details
         const electricityUsage = Math.max(0, item.electricityNew - item.electricityOld);
-        const electricityCost = electricityUsage * 3500;
-        const waterCost = item.tenantCount * 30000;
-        const garbageFee = 20000;
-        const totalAmount = electricityCost + waterCost + garbageFee + item.roomPrice;
+        const electricityCost = electricityUsage * elecRate;
+        const waterCost = item.tenantCount * waterRate;
+        const garbageFee = garbageRate;
+        const wifiFee = wifiRate * (serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person' ? item.tenantCount : 1);
+        
+        // Other services
+        const otherServices = serviceRates.filter(r => 
+            !r.name.toLowerCase().includes('điện') && 
+            !r.name.toLowerCase().includes('nước') && 
+            !r.name.toLowerCase().includes('rác') && 
+            !r.name.toLowerCase().includes('wifi')
+        );
+        const otherTotal = otherServices.reduce((sum, s) => {
+            if (s.unit === 'person') return sum + s.amount * item.tenantCount;
+            return sum + s.amount;
+        }, 0);
+
+        const totalAmount = electricityCost + waterCost + garbageFee + wifiFee + otherTotal + item.roomPrice;
 
         // Find tenant phone
         const roomTenants = tenants.filter(t => t.roomId === item.roomId);
@@ -142,7 +201,7 @@ export default function BatchBillingModal({
             electricityUsage,
             electricityCost,
             waterCost,
-            garbageFee,
+            garbageFee + wifiFee + otherTotal, // Group other fees for simplicity in Zalo msg for now
             item.roomPrice,
             totalAmount
         );
@@ -249,63 +308,83 @@ export default function BatchBillingModal({
                                                         <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Điện cũ</th>
                                                         <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase w-24">Điện mới</th>
                                                         <th scope="col" className="px-3 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Tiền Nước</th>
-                                                        <th scope="col" className="px-3 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Tiền Rác</th>
-                                                        <th scope="col" className="px-3 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Thành tiền</th>
+                                                        <th scope="col" className="px-3 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Phí Khác</th>
+                                                        <th scope="col" className="px-3 py-3.5 text-right text-xs font-medium text-gray-500 uppercase font-bold">Thành tiền</th>
                                                         <th scope="col" className="px-3 py-3.5 text-center text-xs font-medium text-gray-500 uppercase">Zalo</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-200 bg-white">
-                                                    {billingData.map((item) => (
-                                                        <tr key={item.roomId} className={item.isSelected ? 'bg-white' : 'bg-gray-50 opacity-50'}>
-                                                            <td className="relative whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    title={`Chọn phòng ${item.roomNumber}`}
-                                                                    aria-label={`Chọn phòng ${item.roomNumber}`}
-                                                                    className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                                    checked={item.isSelected}
-                                                                    onChange={() => handleToggleSelect(item.roomId)}
-                                                                />
-                                                            </td>
-                                                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">
-                                                                P.{item.roomNumber}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                                {item.tenantCount}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                                {item.electricityOld}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                                <input
-                                                                    type="number"
-                                                                    value={item.electricityNew === 0 ? '' : item.electricityNew}
-                                                                    onChange={(e) => handleElectricityChange(item.roomId, Number(e.target.value))}
-                                                                    placeholder={item.electricityOld.toString()}
-                                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-1 text-gray-900"
-                                                                    disabled={!item.isSelected}
-                                                                />
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500 border-l border-gray-100">
-                                                                {formatCurrency(item.tenantCount * 30000)}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500">
-                                                                {formatCurrency(20000)}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-bold text-indigo-600 border-l border-gray-100">
-                                                                {formatCurrency(calculateRoomTotal(item))}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-center">
-                                                                <button
-                                                                    onClick={() => handleSendZalo(item)}
-                                                                    disabled={!item.isSelected}
-                                                                    className="text-blue-600 hover:text-blue-900 bg-blue-50 px-2 py-1 rounded text-xs"
-                                                                >
-                                                                    Gửi Zalo
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
+                                                    {billingData.map((item) => {
+                                                        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
+                                                        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
+                                                        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
+                                                        const wifiIsPerPerson = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person';
+                                                        
+                                                        const otherServices = serviceRates.filter(r => 
+                                                            !r.name.toLowerCase().includes('điện') && 
+                                                            !r.name.toLowerCase().includes('nước') && 
+                                                            !r.name.toLowerCase().includes('rác') && 
+                                                            !r.name.toLowerCase().includes('wifi')
+                                                        );
+                                                        const otherTotal = otherServices.reduce((sum, s) => {
+                                                            if (s.unit === 'person') return sum + s.amount * item.tenantCount;
+                                                            return sum + s.amount;
+                                                        }, 0);
+
+                                                        const otherFeesTotal = garbageRate + (wifiIsPerPerson ? wifiRate * item.tenantCount : wifiRate) + otherTotal;
+
+                                                        return (
+                                                            <tr key={item.roomId} className={item.isSelected ? 'bg-white' : 'bg-gray-50 opacity-50'}>
+                                                                <td className="relative whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        title={`Chọn phòng ${item.roomNumber}`}
+                                                                        aria-label={`Chọn phòng ${item.roomNumber}`}
+                                                                        className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                                        checked={item.isSelected}
+                                                                        onChange={() => handleToggleSelect(item.roomId)}
+                                                                    />
+                                                                </td>
+                                                                <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">
+                                                                    P.{item.roomNumber}
+                                                                </td>
+                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                                    {item.tenantCount}
+                                                                </td>
+                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                                    {item.electricityOld}
+                                                                </td>
+                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={item.electricityNew === 0 ? '' : item.electricityNew}
+                                                                        onChange={(e) => handleElectricityChange(item.roomId, Number(e.target.value))}
+                                                                        placeholder={item.electricityOld.toString()}
+                                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-1 text-gray-900"
+                                                                        disabled={!item.isSelected}
+                                                                    />
+                                                                </td>
+                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500 border-l border-gray-100">
+                                                                    {formatCurrency(item.tenantCount * waterRate)}
+                                                                </td>
+                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500" title={`Rác: ${formatCurrency(garbageRate)}, Wifi: ${formatCurrency(wifiIsPerPerson ? wifiRate * item.tenantCount : wifiRate)}`}>
+                                                                    {formatCurrency(otherFeesTotal)}
+                                                                </td>
+                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-bold text-indigo-600 border-l border-gray-100">
+                                                                    {formatCurrency(calculateRoomTotal(item))}
+                                                                </td>
+                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-center">
+                                                                    <button
+                                                                        onClick={() => handleSendZalo(item)}
+                                                                        disabled={!item.isSelected}
+                                                                        className="text-blue-600 hover:text-blue-900 bg-blue-50 px-2 py-1 rounded text-xs"
+                                                                    >
+                                                                        Gửi Zalo
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
                                                 </tbody>
                                             </table>
                                         </div>

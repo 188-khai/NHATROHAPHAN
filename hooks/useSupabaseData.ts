@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import { Room, Tenant, Bill, Asset, TaxSettings } from "@/types";
+import { Room, Tenant, Bill, Asset, TaxSettings, ServiceRate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 
 // Mappers to convert DB (snake_case) <-> App (camelCase)
@@ -50,6 +50,8 @@ const mapBillFromDB = (data: any): Bill => ({
     electricityRate: data.electricity_rate,
     waterRate: data.water_rate,
     garbageFee: data.garbage_fee,
+    wifiFee: data.wifi_fee,
+    otherServices: data.other_services || [],
     totalAmount: data.total_amount,
     isPaid: data.is_paid,
     waterOld: data.water_old,
@@ -65,10 +67,28 @@ const mapBillToDB = (bill: Bill) => ({
     electricity_rate: bill.electricityRate,
     water_rate: bill.waterRate,
     garbage_fee: bill.garbageFee,
+    wifi_fee: bill.wifiFee || 0,
+    other_services: bill.otherServices || [],
     total_amount: bill.totalAmount,
     is_paid: bill.isPaid,
     water_old: bill.waterOld,
     water_new: bill.waterNew
+});
+
+const mapServiceRateFromDB = (data: any): ServiceRate => ({
+    id: data.id,
+    name: data.name,
+    amount: data.amount,
+    unit: data.unit,
+    description: data.description,
+});
+
+const mapServiceRateToDB = (rate: ServiceRate) => ({
+    id: rate.id,
+    name: rate.name,
+    amount: rate.amount,
+    unit: rate.unit,
+    description: rate.description,
 });
 
 const mapAssetFromDB = (data: any): Asset => ({
@@ -137,6 +157,7 @@ export function useSupabaseData() {
     const [bills, setBills] = useState<Bill[]>([]);
     const [assets, setAssets] = useState<Asset[]>([]);
     const [taxSettings, setTaxSettings] = useState<TaxSettings | null>(null);
+    const [serviceRates, setServiceRates] = useState<ServiceRate[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Helper to sort rooms numerically (e.g. "P.10" < "P.2")
@@ -158,12 +179,13 @@ export function useSupabaseData() {
             if (isInitial) setLoading(true);
             try {
                 if (!supabase) return;
-                const [roomsRes, tenantsRes, billsRes, assetsRes, taxRes] = await Promise.all([
+                const [roomsRes, tenantsRes, billsRes, assetsRes, taxRes, serviceRatesRes] = await Promise.all([
                     supabase.from("rooms").select("*").order('room_number', { ascending: true }),
                     supabase.from("tenants").select("*"),
                     supabase.from("bills").select("*"),
                     supabase.from("assets").select("*"),
                     supabase.from("tax_settings").select("*").order("year", { ascending: false }).limit(1),
+                    supabase.from("service_rates").select("*"),
                 ]);
 
                 if (roomsRes.data) {
@@ -174,6 +196,7 @@ export function useSupabaseData() {
                 if (billsRes.data) setBills(billsRes.data.map(mapBillFromDB));
                 if (assetsRes.data) setAssets(assetsRes.data.map(mapAssetFromDB));
                 if (taxRes.data && taxRes.data.length > 0) setTaxSettings(mapTaxSettingsFromDB(taxRes.data[0]));
+                if (serviceRatesRes && serviceRatesRes.data) setServiceRates(serviceRatesRes.data.map(mapServiceRateFromDB));
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -301,12 +324,33 @@ export function useSupabaseData() {
     };
 
 
+    // --- Service Rates ---
+    const saveServiceRate = async (rate: ServiceRate) => {
+        if (!supabase) return;
+        const exists = serviceRates.some(r => r.id === rate.id);
+        if (exists) {
+            await supabase.from("service_rates").update(mapServiceRateToDB(rate)).eq("id", rate.id);
+            setServiceRates(prev => prev.map(r => r.id === rate.id ? rate : r));
+        } else {
+            await supabase.from("service_rates").insert(mapServiceRateToDB(rate));
+            setServiceRates(prev => [...prev, rate]);
+        }
+    };
+
+    const deleteServiceRate = async (id: string) => {
+        if (!supabase) return;
+        await supabase.from("service_rates").delete().eq("id", id);
+        setServiceRates(prev => prev.filter(r => r.id !== id));
+    };
+
+
     return {
         rooms,
         tenants,
         bills,
         assets,
         taxSettings,
+        serviceRates,
         loading,
         saveRoom,
         deleteRoom,
@@ -317,6 +361,8 @@ export function useSupabaseData() {
         deleteBill,
         saveAsset,
         deleteAsset,
-        saveTaxSettings
+        saveTaxSettings,
+        saveServiceRate,
+        deleteServiceRate
     };
 }
