@@ -236,7 +236,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                                                     <span>{formatCurrency(bill.waterRate)}</span>
                                                     {roomData.tenantCount > 1 && (
                                                         <span className="text-[10px] text-gray-400 font-normal italic">
-                                                            ({formatCurrency(bill.waterRate / roomData.tenantCount)} x {roomData.tenantCount})
+                                                            ({formatCurrency(serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000)} x {roomData.tenantCount})
                                                         </span>
                                                     )}
                                                 </div>
