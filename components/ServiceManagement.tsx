@@ -75,13 +75,31 @@ export default function ServiceManagement({
                         <p className="text-sm text-gray-500 italic">Các dịch vụ khách thuê xài</p>
                     </div>
                 </div>
-                <button
-                    onClick={() => openModal()}
-                    className="p-3 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg shadow-green-100 transition-all active:scale-95"
-                    title="Thêm dịch vụ mới"
-                >
-                    <Plus className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => {
+                            if (confirm('Bạn có muốn khôi phục về cấu hình dịch vụ mặc định (Điện 1700, Nước 18000, Rác 15000, Wifi 50000) không?')) {
+                                const defaults = [
+                                    { id: crypto.randomUUID(), name: 'Tiền điện', amount: 1700, unit: 'kwh' as ServiceUnit, description: 'Tính theo số ký điện sử dụng' },
+                                    { id: crypto.randomUUID(), name: 'Tiền nước', amount: 18000, unit: 'person' as ServiceUnit, description: 'Tính theo đầu người' },
+                                    { id: crypto.randomUUID(), name: 'Tiền rác', amount: 15000, unit: 'month' as ServiceUnit, description: 'Phí cố định hàng tháng' },
+                                    { id: crypto.randomUUID(), name: 'Tiền wifi', amount: 50000, unit: 'person' as ServiceUnit, description: 'Phí wifi theo đầu người' }
+                                ];
+                                defaults.forEach(d => onSaveServiceRate(d));
+                            }
+                        }}
+                        className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all active:scale-95"
+                    >
+                        Khôi phục mặc định
+                    </button>
+                    <button
+                        onClick={() => openModal()}
+                        className="p-3 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg shadow-green-100 transition-all active:scale-95"
+                        title="Thêm dịch vụ mới"
+                    >
+                        <Plus className="w-6 h-6" />
+                    </button>
+                </div>
             </div>
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">

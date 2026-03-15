@@ -7,10 +7,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function seedServices() {
     const services = [
-        { name: 'Tiền điện', amount: 1700, unit: 'month', description: 'Theo hình mẫu' },
-        { name: 'Tiền nước', amount: 18000, unit: 'month', description: 'Theo hình mẫu' },
-        { name: 'Tiền rác', amount: 15000, unit: 'month', description: 'Theo hình mẫu' },
-        { name: 'Tiền wifi (người)', amount: 50000, unit: 'person', description: 'Theo hình mẫu' }
+        { name: 'Tiền điện', amount: 1700, unit: 'usage', description: 'Tính theo số ký điện sử dụng' },
+        { name: 'Tiền nước', amount: 18000, unit: 'person', description: 'Tính theo đầu người' },
+        { name: 'Tiền rác', amount: 15000, unit: 'month', description: 'Phí cố định hàng tháng' },
+        { name: 'Tiền wifi', amount: 50000, unit: 'person', description: 'Phí wifi theo đầu người' }
     ];
 
     console.log('Inserting services...');
