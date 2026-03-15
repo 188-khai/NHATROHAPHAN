@@ -177,53 +177,38 @@ export default function RoomDetailModal({
         if (!room) return;
         
         const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
-        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
-        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
-        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
-        const wifiIsPerPerson = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person';
-
         const electricityUsage = Math.max(0, electricityNew - electricityOld);
         const electricityCost = electricityUsage * elecRate;
-        const waterCost = roomTenants.length * waterRate;
-        const garbageFee = garbageRate;
-        const wifiFee = wifiIsPerPerson ? wifiRate * roomTenants.length : wifiRate;
 
-        // Other services
-        const otherServices = serviceRates.filter(r => 
-            !r.name.toLowerCase().includes('điện') && 
-            !r.name.toLowerCase().includes('nước') && 
-            !r.name.toLowerCase().includes('rác') && 
-            !r.name.toLowerCase().includes('wifi')
-        );
-        const otherTotal = otherServices.reduce((sum, s) => {
-            if (s.unit === 'person') return sum + s.amount * roomTenants.length;
-            return sum + s.amount;
-        }, 0);
+        // Dynamic calculation for all other rates
+        const services = serviceRates.filter(s => !s.name.toLowerCase().includes('điện')).map(s => {
+            const isPerPerson = s.unit === 'person';
+            const count = isPerPerson ? roomTenants.length : 1;
+            const total = s.amount * count;
+            
+            return {
+                name: s.name,
+                rate: s.amount,
+                unit: s.unit,
+                count: count,
+                amount: total,
+                isPerPerson
+            };
+        });
 
-        const totalAmount = electricityCost + waterCost + garbageFee + wifiFee + otherTotal + room.price;
+        const totalAmount = electricityCost + services.reduce((sum, s) => sum + s.amount, 0) + room.price;
 
         setCalculatedBill({
             electricityUsage,
             electricityCost,
-            waterCost,
-            garbageFee,
-            wifiFee,
-            otherTotal,
-            otherServices: otherServices.map(s => ({
-                name: s.name,
-                amount: s.unit === 'person' ? s.amount * roomTenants.length : s.amount
-            })),
+            services,
             roomPrice: room.price,
-            totalAmount
+            totalAmount,
+            electricityRate: elecRate
         });
     };
 
-    // Helper to construct bill object
     const getBillPayload = (): Bill => {
-        const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
-        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
-        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
-
         if (editingBill) {
             return {
                 ...editingBill,
@@ -232,8 +217,15 @@ export default function RoomDetailModal({
                 waterOld,
                 waterNew,
                 totalAmount: calculatedBill.totalAmount,
-                wifiFee: calculatedBill.wifiFee,
-                otherServices: calculatedBill.otherServices
+                // We keep the legacy fields for compatibility, mapping from our dynamic services
+                waterRate: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('nước'))?.amount || 0,
+                garbageFee: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('rác'))?.amount || 0,
+                wifiFee: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('wifi'))?.amount || 0,
+                otherServices: calculatedBill.services.filter((s: any) => 
+                    !s.name.toLowerCase().includes('nước') && 
+                    !s.name.toLowerCase().includes('rác') && 
+                    !s.name.toLowerCase().includes('wifi')
+                ).map((s: any) => ({ name: s.name, amount: s.amount }))
             };
         } else {
             return {
@@ -244,11 +236,15 @@ export default function RoomDetailModal({
                 electricityNew,
                 waterOld,
                 waterNew,
-                electricityRate: elecRate,
-                waterRate: waterRate * roomTenants.length, // Total water for the room
-                garbageFee: garbageRate,
-                wifiFee: calculatedBill.wifiFee,
-                otherServices: calculatedBill.otherServices,
+                electricityRate: calculatedBill.electricityRate,
+                waterRate: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('nước'))?.amount || 0,
+                garbageFee: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('rác'))?.amount || 0,
+                wifiFee: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('wifi'))?.amount || 0,
+                otherServices: calculatedBill.services.filter((s: any) => 
+                    !s.name.toLowerCase().includes('nước') && 
+                    !s.name.toLowerCase().includes('rác') && 
+                    !s.name.toLowerCase().includes('wifi')
+                ).map((s: any) => ({ name: s.name, amount: s.amount })),
                 totalAmount: calculatedBill.totalAmount,
                 isPaid: false
             };
@@ -733,14 +729,15 @@ export default function RoomDetailModal({
 
                                                         {calculatedBill && (
                                                             <div className="mt-4 bg-gray-50 p-4 rounded-md text-gray-900">
-                                                                <p className="flex justify-between text-sm"><span>Tiền điện ({calculatedBill.electricityUsage} số):</span> <span className="font-medium">{formatCurrency(calculatedBill.electricityCost)}</span></p>
-                                                                <p className="flex justify-between text-sm"><span>Tiền nước:</span> <span className="font-medium">{formatCurrency(calculatedBill.waterCost)}</span></p>
-                                                                <p className="flex justify-between text-sm"><span>Tiền rác:</span> <span className="font-medium">{formatCurrency(calculatedBill.garbageFee)}</span></p>
-                                                                {calculatedBill.wifiFee > 0 && (
-                                                                    <p className="flex justify-between text-sm"><span>Wifi:</span> <span className="font-medium">{formatCurrency(calculatedBill.wifiFee)}</span></p>
-                                                                )}
-                                                                {calculatedBill.otherServices && calculatedBill.otherServices.map((s: any, idx: number) => (
-                                                                    <p key={idx} className="flex justify-between text-sm"><span>{s.name}:</span> <span className="font-medium">{formatCurrency(s.amount)}</span></p>
+                                                                <p className="flex justify-between text-sm">
+                                                                    <span>Tiền điện ({calculatedBill.electricityUsage} số):</span> 
+                                                                    <span className="font-medium">{formatCurrency(calculatedBill.electricityCost)}</span>
+                                                                </p>
+                                                                {calculatedBill.services.map((s: any, idx: number) => (
+                                                                    <div key={idx} className="flex justify-between text-sm">
+                                                                        <span>{s.name} {s.isPerPerson && s.count > 1 ? `(x${s.count})` : ''}:</span>
+                                                                        <span className="font-medium">{formatCurrency(s.amount)}</span>
+                                                                    </div>
                                                                 ))}
                                                                 <p className="flex justify-between text-sm"><span>Tiền phòng:</span> <span className="font-medium">{formatCurrency(room.price)}</span></p>
                                                                 <div className="border-t border-gray-200 my-2 pt-2">

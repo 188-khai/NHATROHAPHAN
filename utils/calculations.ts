@@ -37,11 +37,12 @@ export const generateZaloMessage = (
     electricityNew: number,
     electricityUsage: number,
     electricityCost: number,
-    waterCost: number,
-    garbageFee: number,
+    services: { name: string, amount: number }[],
     roomPrice: number,
     totalAmount: number
 ) => {
+    const servicesList = services.map((s, idx) => `${idx + 2}. ${s.name}: ${formatCurrency(s.amount)}`).join('\n');
+    
     return `
 🏠 HÓA ĐƠN TIỀN PHÒNG ${roomNumber} - THÁNG ${period}
 
@@ -51,20 +52,18 @@ export const generateZaloMessage = (
    - Tiêu thụ: ${electricityUsage} kWh
    - Thành tiền: ${formatCurrency(electricityCost)}
 
-2. Tiền nước: ${formatCurrency(waterCost)}
+${servicesList}
 
-3. Rác & Dịch vụ: ${formatCurrency(garbageFee)}
-
-4. Tiền phòng: ${formatCurrency(roomPrice)}
+${services.length + 2}. Tiền phòng: ${formatCurrency(roomPrice)}
 
 --------------------------------
 💰 TỔNG CỘNG: ${formatCurrency(totalAmount)}
 --------------------------------
 
 Vui lòng thanh toán qua:
-NH MP Bank (Quân đội)
-STK: 0352231267
-Chủ TK: HUA CONG KHAI
+NH MB Bank (Quân đội)
+STK: 666088887979
+Chủ TK: HUA QUANG KHAI
 Nội dung: P${roomNumber} T${period}
 
 Cảm ơn bạn!

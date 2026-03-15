@@ -45,22 +45,61 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             fgColor: { argb: 'FFE0E0E0' }
         };
 
+        // Initialize totals
+        let totalElecUsage = 0;
+        let totalElecCost = 0;
+        let totalWaterCost = 0;
+        let totalGarbageCost = 0;
+        let totalWifiCost = 0;
+        let totalOtherCost = 0;
+        let totalOverall = 0;
+
         // Add data
         monthlyBills.forEach(bill => {
             const elecUsage = bill.electricityNew - bill.electricityOld;
             const otherTotal = bill.otherServices?.reduce((sum, s) => sum + s.amount, 0) || 0;
+            const elecCost = elecUsage * bill.electricityRate;
+            const waterCost = bill.waterRate;
+            const garbageCost = bill.garbageFee;
+            const wifiCost = bill.wifiFee || 0;
             
+            totalElecUsage += elecUsage;
+            totalElecCost += elecCost;
+            totalWaterCost += waterCost;
+            totalGarbageCost += garbageCost;
+            totalWifiCost += wifiCost;
+            totalOtherCost += otherTotal;
+            totalOverall += bill.totalAmount;
+
             worksheet.addRow({
                 room: `P.${getRoomNumber(bill.roomId)}`,
                 elecUsage: elecUsage,
-                elecCost: elecUsage * bill.electricityRate,
-                waterCost: bill.waterRate, // This is total water cost in our current Bill type
-                garbageCost: bill.garbageFee,
-                wifiCost: bill.wifiFee || 0,
+                elecCost: elecCost,
+                waterCost: waterCost,
+                garbageCost: garbageCost,
+                wifiCost: wifiCost,
                 otherCost: otherTotal,
                 total: bill.totalAmount
             });
         });
+
+        // Add Totals row to Excel
+        const totalRow = worksheet.addRow({
+            room: 'TỔNG CỘNG',
+            elecUsage: totalElecUsage,
+            elecCost: totalElecCost,
+            waterCost: totalWaterCost,
+            garbageCost: totalGarbageCost,
+            wifiCost: totalWifiCost,
+            otherCost: totalOtherCost,
+            total: totalOverall
+        });
+        totalRow.font = { bold: true };
+        totalRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF00' } // Yellow
+        };
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -71,6 +110,22 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
         anchor.click();
         window.URL.revokeObjectURL(url);
     };
+
+    // Calculate totals for UI
+    const totals = monthlyBills.reduce((acc, bill) => {
+        const elecUsage = bill.electricityNew - bill.electricityOld;
+        const otherTotal = bill.otherServices?.reduce((sum, s) => sum + s.amount, 0) || 0;
+        
+        return {
+            elecUsage: acc.elecUsage + elecUsage,
+            elecCost: acc.elecCost + (elecUsage * bill.electricityRate),
+            waterCost: acc.waterCost + bill.waterRate,
+            garbageCost: acc.garbageCost + bill.garbageFee,
+            wifiCost: acc.wifiCost + (bill.wifiFee || 0),
+            otherCost: acc.otherCost + otherTotal,
+            total: acc.total + bill.totalAmount
+        };
+    }, { elecUsage: 0, elecCost: 0, waterCost: 0, garbageCost: 0, wifiCost: 0, otherCost: 0, total: 0 });
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -114,19 +169,18 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                         <tr>
                             <th rowSpan={2} className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Tên phòng</th>
                             <th colSpan={2} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-blue-50/50">Tiền điện ({selectedMonth})</th>
-                            <th colSpan={2} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Tiền nước ({selectedMonth})</th>
-                            <th colSpan={2} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-gray-50">Tiền rác ({selectedMonth})</th>
-                            <th colSpan={2} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Tiền wifi (người) (Người)</th>
+                            <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Tiền nước</th>
+                            <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-gray-50">Tiền rác</th>
+                            <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Wifi</th>
+                            <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-gray-50">Dịch vụ khác</th>
                             <th rowSpan={2} className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Tổng cộng</th>
                         </tr>
                         <tr className="bg-gray-50 text-[10px]">
                             <th className="px-4 py-2 text-left text-gray-400 border-r">Sử dụng</th>
                             <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
-                            <th className="px-4 py-2 text-left text-gray-400 border-r">Sử dụng</th>
                             <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
-                            <th className="px-4 py-2 text-left text-gray-400 border-r">Sử dụng</th>
                             <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
-                            <th className="px-4 py-2 text-left text-gray-400 border-r">Sử dụng</th>
+                            <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
                             <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
                         </tr>
                     </thead>
@@ -144,47 +198,67 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                                 </td>
                             </tr>
                         ) : (
-                            monthlyBills.map((bill) => {
-                                const elecUsage = bill.electricityNew - bill.electricityOld;
-                                // For water/garbage/wifi, we assume usage count is based on tenant count or flat
-                                // Our current Bill type doesn't store usage, just totalAmount per service.
-                                // We might need to deduce it or just show total.
-                                
-                                return (
-                                    <tr key={bill.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r bg-yellow-50/20">
-                                            P.{getRoomNumber(bill.roomId)}
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-center">
-                                            {elecUsage}
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
-                                            {formatCurrency(elecUsage * bill.electricityRate)}
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-center">
-                                            -
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
-                                            {formatCurrency(bill.waterRate)}
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-center">
-                                            -
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
-                                            {formatCurrency(bill.garbageFee)}
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-center">
-                                            -
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
-                                            {formatCurrency(bill.wifiFee || 0)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-indigo-600 text-right">
-                                            {formatCurrency(bill.totalAmount)}
-                                        </td>
-                                    </tr>
-                                );
-                            })
+                            <>
+                                {monthlyBills.map((bill) => {
+                                    const elecUsage = bill.electricityNew - bill.electricityOld;
+                                    const otherTotal = bill.otherServices?.reduce((sum, s) => sum + s.amount, 0) || 0;
+                                    
+                                    return (
+                                        <tr key={bill.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r bg-yellow-50/20">
+                                                P.{getRoomNumber(bill.roomId)}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-center">
+                                                {elecUsage}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
+                                                {formatCurrency(elecUsage * bill.electricityRate)}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
+                                                {formatCurrency(bill.waterRate)}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right bg-gray-50/30">
+                                                {formatCurrency(bill.garbageFee)}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
+                                                {formatCurrency(bill.wifiFee || 0)}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right bg-gray-50/30">
+                                                {formatCurrency(otherTotal)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-indigo-600 text-right">
+                                                {formatCurrency(bill.totalAmount)}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                <tr className="bg-yellow-50 font-bold border-t-2 border-gray-300">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r">
+                                        TỔNG CỘNG
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-center">
+                                        {totals.elecUsage}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-right">
+                                        {formatCurrency(totals.elecCost)}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-right">
+                                        {formatCurrency(totals.waterCost)}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-right">
+                                        {formatCurrency(totals.garbageCost)}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-right">
+                                        {formatCurrency(totals.wifiCost)}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-right">
+                                        {formatCurrency(totals.otherCost)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-indigo-700 text-right">
+                                        {formatCurrency(totals.total)}
+                                    </td>
+                                </tr>
+                            </>
                         )}
                     </tbody>
                 </table>

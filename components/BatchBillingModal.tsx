@@ -79,46 +79,34 @@ export default function BatchBillingModal({
     };
 
     const calculateRoomTotal = (item: RoomBillingData) => {
+        // Find core rates
         const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
-        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
-        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
-        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
+        
+        // Dynamic calculation for all rates including water, garbage, wifi and others
+        const servicesTotal = serviceRates.reduce((sum, s) => {
+            if (s.name.toLowerCase().includes('điện')) return sum; // Handled separately due to index
+            
+            let amount = s.amount;
+            if (s.unit === 'person') amount *= item.tenantCount;
+            // 'room' or 'month' unit is baseline amount
+            
+            return sum + amount;
+        }, 0);
 
         const electricityUsage = Math.max(0, item.electricityNew - item.electricityOld);
         const electricityCost = electricityUsage * elecRate;
-        const waterCost = item.tenantCount * waterRate;
-        const garbageFee = garbageRate;
-        const wifiFee = wifiRate * (serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person' ? item.tenantCount : 1);
-        
-        // Other services
-        const otherServices = serviceRates.filter(r => 
-            !r.name.toLowerCase().includes('điện') && 
-            !r.name.toLowerCase().includes('nước') && 
-            !r.name.toLowerCase().includes('rác') && 
-            !r.name.toLowerCase().includes('wifi')
-        );
-        const otherTotal = otherServices.reduce((sum, s) => {
-            if (s.unit === 'person') return sum + s.amount * item.tenantCount;
-            return sum + s.amount;
-        }, 0);
 
-        return electricityCost + waterCost + garbageFee + wifiFee + otherTotal + item.roomPrice;
+        return electricityCost + servicesTotal + item.roomPrice;
     };
 
     const handleSave = () => {
         const selectedItems = billingData.filter((item) => item.isSelected);
         const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
-        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
-        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
-        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
 
         const newBills: Bill[] = selectedItems.map((item) => {
             const electricityUsage = Math.max(0, item.electricityNew - item.electricityOld);
-            const electricityCost = electricityUsage * elecRate;
-            const waterCost = item.tenantCount * waterRate;
-            const garbageFee = garbageRate;
-            const wifiFee = wifiRate * (serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person' ? item.tenantCount : 1);
-
+            
+            // Map other services to bill payload
             const otherServices = serviceRates.filter(r => 
                 !r.name.toLowerCase().includes('điện') && 
                 !r.name.toLowerCase().includes('nước') && 
@@ -128,6 +116,16 @@ export default function BatchBillingModal({
                 name: s.name,
                 amount: s.unit === 'person' ? s.amount * item.tenantCount : s.amount
             }));
+
+            // Individual fees for the Bill object
+            const waterService = serviceRates.find(r => r.name.toLowerCase().includes('nước'));
+            const waterCost = waterService ? (waterService.unit === 'person' ? waterService.amount * item.tenantCount : waterService.amount) : 30000 * item.tenantCount;
+            
+            const garbageService = serviceRates.find(r => r.name.toLowerCase().includes('rác'));
+            const garbageFee = garbageService ? (garbageService.unit === 'person' ? garbageService.amount * item.tenantCount : garbageService.amount) : 20000;
+            
+            const wifiService = serviceRates.find(r => r.name.toLowerCase().includes('wifi'));
+            const wifiFee = wifiService ? (wifiService.unit === 'person' ? wifiService.amount * item.tenantCount : wifiService.amount) : 0;
 
             const totalAmount = calculateRoomTotal(item);
 
@@ -140,7 +138,7 @@ export default function BatchBillingModal({
                 waterOld: 0,
                 waterNew: 0,
                 electricityRate: elecRate,
-                waterRate: waterCost, // We store total water cost here as per existing Bill structure
+                waterRate: waterCost,
                 garbageFee: garbageFee,
                 wifiFee: wifiFee,
                 otherServices: otherServices,
@@ -159,34 +157,23 @@ export default function BatchBillingModal({
 
     const handleSendZalo = async (item: RoomBillingData) => {
         const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
-        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
-        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
-        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
+        
+        // Prepare services list for Zalo message
+        const messageServices = serviceRates
+            .filter(s => !s.name.toLowerCase().includes('điện'))
+            .map(s => {
+                const isPerPerson = s.unit === 'person';
+                const amount = isPerPerson ? s.amount * item.tenantCount : s.amount;
+                return { name: s.name, amount };
+            });
 
-        // Calculate details
         const electricityUsage = Math.max(0, item.electricityNew - item.electricityOld);
         const electricityCost = electricityUsage * elecRate;
-        const waterCost = item.tenantCount * waterRate;
-        const garbageFee = garbageRate;
-        const wifiFee = wifiRate * (serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person' ? item.tenantCount : 1);
-        
-        // Other services
-        const otherServices = serviceRates.filter(r => 
-            !r.name.toLowerCase().includes('điện') && 
-            !r.name.toLowerCase().includes('nước') && 
-            !r.name.toLowerCase().includes('rác') && 
-            !r.name.toLowerCase().includes('wifi')
-        );
-        const otherTotal = otherServices.reduce((sum, s) => {
-            if (s.unit === 'person') return sum + s.amount * item.tenantCount;
-            return sum + s.amount;
-        }, 0);
-
-        const totalAmount = electricityCost + waterCost + garbageFee + wifiFee + otherTotal + item.roomPrice;
+        const totalAmount = calculateRoomTotal(item);
 
         // Find tenant phone
         const roomTenants = tenants.filter(t => t.roomId === item.roomId);
-        const mainTenant = roomTenants[0]; // Assuming first tenant is contact
+        const mainTenant = roomTenants[0];
 
         if (!mainTenant) {
             alert(`Phòng ${item.roomNumber} chưa có người thuê hoặc số điện thoại!`);
@@ -200,16 +187,13 @@ export default function BatchBillingModal({
             item.electricityNew,
             electricityUsage,
             electricityCost,
-            waterCost,
-            garbageFee + wifiFee + otherTotal, // Group other fees for simplicity in Zalo msg for now
+            messageServices,
             item.roomPrice,
             totalAmount
         );
 
         try {
             await navigator.clipboard.writeText(message);
-            // Open Zalo format: https://zalo.me/<phone>
-            // Clean phone number (remove leading 0, add 84) if necessary, usually zalo.me works with 0xxx
             window.open(`https://zalo.me/${mainTenant.phone}`, '_blank');
         } catch (err) {
             console.error('Failed to copy text: ', err);
@@ -225,15 +209,9 @@ export default function BatchBillingModal({
 
         for (let i = 0; i < selectedItems.length; i++) {
             const item = selectedItems[i];
-
-            // Wait 2s for all except first
             if (i > 0) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
-
-            // We need to visually indicate progress or errors could happen if user switches tabs
-            // But main limitation is browser might block popup if not directly triggered by click.
-            // We'll try. Ideally prompt user intervention if blocked.
             handleSendZalo(item);
         }
     };
@@ -315,10 +293,13 @@ export default function BatchBillingModal({
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-200 bg-white">
                                                     {billingData.map((item) => {
-                                                        const waterRate = serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000;
-                                                        const garbageRate = serviceRates.find(r => r.name.toLowerCase().includes('rác'))?.amount || 20000;
-                                                        const wifiRate = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.amount || 0;
-                                                        const wifiIsPerPerson = serviceRates.find(r => r.name.toLowerCase().includes('wifi'))?.unit === 'person';
+                                                        const waterService = serviceRates.find(r => r.name.toLowerCase().includes('nước'));
+                                                        const waterIsPerPerson = waterService?.unit === 'person';
+                                                        const waterRate = waterService?.amount || (30000);
+                                                        const waterAmount = waterIsPerPerson ? waterRate * item.tenantCount : waterRate;
+
+                                                        const garbageService = serviceRates.find(r => r.name.toLowerCase().includes('rác'));
+                                                        const wifiService = serviceRates.find(r => r.name.toLowerCase().includes('wifi'));
                                                         
                                                         const otherServices = serviceRates.filter(r => 
                                                             !r.name.toLowerCase().includes('điện') && 
@@ -326,12 +307,11 @@ export default function BatchBillingModal({
                                                             !r.name.toLowerCase().includes('rác') && 
                                                             !r.name.toLowerCase().includes('wifi')
                                                         );
-                                                        const otherTotal = otherServices.reduce((sum, s) => {
-                                                            if (s.unit === 'person') return sum + s.amount * item.tenantCount;
-                                                            return sum + s.amount;
-                                                        }, 0);
 
-                                                        const otherFeesTotal = garbageRate + (wifiIsPerPerson ? wifiRate * item.tenantCount : wifiRate) + otherTotal;
+                                                        const otherFeesTotal = [garbageService, wifiService, ...otherServices].reduce((sum, s) => {
+                                                            if (!s) return sum;
+                                                            return sum + (s.unit === 'person' ? s.amount * item.tenantCount : s.amount);
+                                                        }, 0);
 
                                                         return (
                                                             <tr key={item.roomId} className={item.isSelected ? 'bg-white' : 'bg-gray-50 opacity-50'}>
@@ -365,10 +345,13 @@ export default function BatchBillingModal({
                                                                     />
                                                                 </td>
                                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500 border-l border-gray-100">
-                                                                    {formatCurrency(item.tenantCount * waterRate)}
+                                                                    <div>{formatCurrency(waterAmount)}</div>
+                                                                    {waterIsPerPerson && item.tenantCount > 1 && (
+                                                                        <div className="text-[10px] text-gray-400">({formatCurrency(waterRate)} x {item.tenantCount})</div>
+                                                                    )}
                                                                 </td>
-                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500" title={`Rác: ${formatCurrency(garbageRate)}, Wifi: ${formatCurrency(wifiIsPerPerson ? wifiRate * item.tenantCount : wifiRate)}`}>
-                                                                    {formatCurrency(otherFeesTotal)}
+                                                                <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500">
+                                                                    <div>{formatCurrency(otherFeesTotal)}</div>
                                                                 </td>
                                                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-bold text-indigo-600 border-l border-gray-100">
                                                                     {formatCurrency(calculateRoomTotal(item))}
