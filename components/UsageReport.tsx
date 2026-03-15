@@ -212,32 +212,16 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                             </tr>
                         ) : (
                             <>
-                                {monthlyBills.map((bill) => {
-                                    const roomData = getRoomData(bill.roomId);
-                                    const elecUsage = bill.electricityNew - bill.electricityOld;
-                                    const otherTotal = bill.otherServices?.reduce((sum, s) => sum + s.amount, 0) || 0;
-                                    
-                                    return (
-                                        <tr key={bill.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r bg-yellow-50/20">
-                                                P.{roomData.number}
-                                            </td>
-                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-600 border-r">
-                                                {roomData.tenantCount}
-                                            </td>
-                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-center">
-                                                {elecUsage}
-                                            </td>
-                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
-                                                {formatCurrency(elecUsage * bill.electricityRate)}
-                                            </td>
                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
                                                 <div className="flex flex-col">
                                                     <span>{formatCurrency(bill.waterRate)}</span>
                                                     {roomData.tenantCount > 1 && (
                                                         <span className="text-[10px] text-gray-400 font-normal italic">
-                                                            ({formatCurrency(serviceRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000)} x {roomData.tenantCount})
+                                                            ({formatCurrency(uniqueRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000)} x {roomData.tenantCount})
                                                         </span>
+                                                    )}
+                                                    {bill.waterRate !== ((uniqueRates.find(r => r.name.toLowerCase().includes('nước'))?.amount || 30000) * roomData.tenantCount) && (
+                                                        <span className="text-[8px] text-red-500 font-bold uppercase mt-1">Cần tính lại</span>
                                                     )}
                                                 </div>
                                             </td>
