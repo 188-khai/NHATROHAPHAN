@@ -102,13 +102,35 @@ export default function BatchBillingModal({
 
     const handleSave = () => {
         const selectedItems = billingData.filter((item) => item.isSelected);
-        const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
-
         const newBills: Bill[] = selectedItems.map((item) => {
             const electricityUsage = Math.max(0, item.electricityNew - item.electricityOld);
             
-            // Map other services to bill payload
-            const otherServices = serviceRates.filter(r => 
+            // 1. Get Core Rates with Deduplication (prefer first match)
+            // Deduplicate by name to prevent double counting if user has duplicate configs
+            const uniqueRates = serviceRates.reduce((acc, current) => {
+                const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+                if (!x) return acc.concat([current]);
+                else return acc;
+            }, [] as ServiceRate[]);
+
+            const elecRate = uniqueRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
+            const electricityCost = electricityUsage * elecRate;
+
+            // 2. Individual fees for the Bill object
+            const waterService = uniqueRates.find(r => r.name.toLowerCase().includes('nước'));
+            const isWaterPerPerson = waterService ? (waterService.unit === 'person' || waterService.unit !== 'room') : true;
+            const waterCost = waterService ? (isWaterPerPerson ? waterService.amount * item.tenantCount : waterService.amount) : 30000 * item.tenantCount;
+            
+            const garbageService = uniqueRates.find(r => r.name.toLowerCase().includes('rác'));
+            const isGarbagePerPerson = garbageService?.unit === 'person';
+            const garbageFee = garbageService ? (isGarbagePerPerson ? garbageService.amount * item.tenantCount : garbageService.amount) : 20000;
+            
+            const wifiService = uniqueRates.find(r => r.name.toLowerCase().includes('wifi'));
+            const isWifiPerPerson = wifiService?.unit === 'person';
+            const wifiFee = wifiService ? (isWifiPerPerson ? wifiService.amount * item.tenantCount : wifiService.amount) : 0;
+
+            // 3. Map other services
+            const otherServices = uniqueRates.filter(r => 
                 !r.name.toLowerCase().includes('điện') && 
                 !r.name.toLowerCase().includes('nước') && 
                 !r.name.toLowerCase().includes('rác') && 
@@ -118,18 +140,9 @@ export default function BatchBillingModal({
                 amount: s.unit === 'person' ? s.amount * item.tenantCount : s.amount
             }));
 
-            // Individual fees for the Bill object
-            const waterService = serviceRates.find(r => r.name.toLowerCase().includes('nước'));
-            const isWaterPerPerson = waterService ? (waterService.unit === 'person' || waterService.unit !== 'room') : true;
-            const waterCost = waterService ? (isWaterPerPerson ? waterService.amount * item.tenantCount : waterService.amount) : 30000 * item.tenantCount;
-            
-            const garbageService = serviceRates.find(r => r.name.toLowerCase().includes('rác'));
-            const garbageFee = garbageService ? (garbageService.unit === 'person' ? garbageService.amount * item.tenantCount : garbageService.amount) : 20000;
-            
-            const wifiService = serviceRates.find(r => r.name.toLowerCase().includes('wifi'));
-            const wifiFee = wifiService ? (wifiService.unit === 'person' ? wifiService.amount * item.tenantCount : wifiService.amount) : 0;
-
-            const totalAmount = calculateRoomTotal(item);
+            // 4. Calculate Final Total (Sum of parts)
+            const otherServicesTotal = otherServices.reduce((sum, s) => sum + s.amount, 0);
+            const totalAmount = item.roomPrice + electricityCost + waterCost + garbageFee + wifiFee + otherServicesTotal;
 
             return {
                 id: crypto.randomUUID(),

@@ -176,12 +176,19 @@ export default function RoomDetailModal({
     const handleCalculateBill = () => {
         if (!room) return;
         
-        const elecRate = serviceRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
+        // Deduplicate rates
+        const uniqueRates = serviceRates.reduce((acc, current) => {
+            const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+            if (!x) return acc.concat([current]);
+            else return acc;
+        }, [] as ServiceRate[]);
+
+        const elecRate = uniqueRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
         const electricityUsage = Math.max(0, electricityNew - electricityOld);
         const electricityCost = electricityUsage * elecRate;
 
         // Dynamic calculation for all other rates
-        const services = serviceRates.filter(s => !s.name.toLowerCase().includes('điện')).map(s => {
+        const services = uniqueRates.filter(s => !s.name.toLowerCase().includes('điện')).map(s => {
             const isPerPerson = s.unit === 'person' || (s.name.toLowerCase().includes('nước') && s.unit !== 'room');
             const count = isPerPerson ? roomTenants.length : 1;
             const total = s.amount * count;
@@ -196,7 +203,8 @@ export default function RoomDetailModal({
             };
         });
 
-        const totalAmount = electricityCost + services.reduce((sum, s) => sum + s.amount, 0) + room.price;
+        const servicesTotal = services.reduce((sum, s) => sum + s.amount, 0);
+        const totalAmount = electricityCost + servicesTotal + room.price;
 
         setCalculatedBill({
             electricityUsage,
@@ -209,44 +217,37 @@ export default function RoomDetailModal({
     };
 
     const getBillPayload = (): Bill => {
+        const waterCost = calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('nước'))?.amount || 0;
+        const garbageFee = calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('rác'))?.amount || 0;
+        const wifiFee = calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('wifi'))?.amount || 0;
+        const otherServices = calculatedBill.services.filter((s: any) => 
+            !s.name.toLowerCase().includes('nước') && 
+            !s.name.toLowerCase().includes('rác') && 
+            !s.name.toLowerCase().includes('wifi')
+        ).map((s: any) => ({ name: s.name, amount: s.amount }));
+
+        const basePayload = {
+            electricityOld,
+            electricityNew,
+            waterOld,
+            waterNew,
+            electricityRate: calculatedBill.electricityRate,
+            waterRate: waterCost,
+            garbageFee: garbageFee,
+            wifiFee: wifiFee,
+            otherServices: otherServices,
+            totalAmount: calculatedBill.totalAmount,
+            isPaid: editingBill?.isPaid || false
+        };
+
         if (editingBill) {
-            return {
-                ...editingBill,
-                electricityOld,
-                electricityNew,
-                waterOld,
-                waterNew,
-                totalAmount: calculatedBill.totalAmount,
-                // We keep the legacy fields for compatibility, mapping from our dynamic services
-                waterRate: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('nước'))?.amount || 0,
-                garbageFee: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('rác'))?.amount || 0,
-                wifiFee: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('wifi'))?.amount || 0,
-                otherServices: calculatedBill.services.filter((s: any) => 
-                    !s.name.toLowerCase().includes('nước') && 
-                    !s.name.toLowerCase().includes('rác') && 
-                    !s.name.toLowerCase().includes('wifi')
-                ).map((s: any) => ({ name: s.name, amount: s.amount }))
-            };
+            return { ...editingBill, ...basePayload };
         } else {
             return {
                 id: crypto.randomUUID(),
                 roomId: room!.id,
                 date: new Date().toISOString(),
-                electricityOld,
-                electricityNew,
-                waterOld,
-                waterNew,
-                electricityRate: calculatedBill.electricityRate,
-                waterRate: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('nước'))?.amount || 0,
-                garbageFee: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('rác'))?.amount || 0,
-                wifiFee: calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('wifi'))?.amount || 0,
-                otherServices: calculatedBill.services.filter((s: any) => 
-                    !s.name.toLowerCase().includes('nước') && 
-                    !s.name.toLowerCase().includes('rác') && 
-                    !s.name.toLowerCase().includes('wifi')
-                ).map((s: any) => ({ name: s.name, amount: s.amount })),
-                totalAmount: calculatedBill.totalAmount,
-                isPaid: false
+                ...basePayload
             };
         }
     };
