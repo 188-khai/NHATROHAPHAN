@@ -182,7 +182,7 @@ export default function RoomDetailModal({
 
         // Dynamic calculation for all other rates
         const services = serviceRates.filter(s => !s.name.toLowerCase().includes('điện')).map(s => {
-            const isPerPerson = s.unit === 'person';
+            const isPerPerson = s.unit === 'person' || (s.name.toLowerCase().includes('nước') && s.unit !== 'room');
             const count = isPerPerson ? roomTenants.length : 1;
             const total = s.amount * count;
             

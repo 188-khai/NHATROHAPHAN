@@ -84,11 +84,12 @@ export default function BatchBillingModal({
         
         // Dynamic calculation for all rates including water, garbage, wifi and others
         const servicesTotal = serviceRates.reduce((sum, s) => {
-            if (s.name.toLowerCase().includes('điện')) return sum; // Handled separately due to index
+            if (s.name.toLowerCase().includes('điện')) return sum;
             
             let amount = s.amount;
-            if (s.unit === 'person') amount *= item.tenantCount;
-            // 'room' or 'month' unit is baseline amount
+            // Force per-person if name contains 'nước' and unit is 'person' OR it's clearly a per-person rate (like 30000)
+            const isPerPerson = s.unit === 'person' || (s.name.toLowerCase().includes('nước') && s.unit !== 'room');
+            if (isPerPerson) amount *= item.tenantCount;
             
             return sum + amount;
         }, 0);
@@ -119,7 +120,8 @@ export default function BatchBillingModal({
 
             // Individual fees for the Bill object
             const waterService = serviceRates.find(r => r.name.toLowerCase().includes('nước'));
-            const waterCost = waterService ? (waterService.unit === 'person' ? waterService.amount * item.tenantCount : waterService.amount) : 30000 * item.tenantCount;
+            const isWaterPerPerson = waterService ? (waterService.unit === 'person' || waterService.unit !== 'room') : true;
+            const waterCost = waterService ? (isWaterPerPerson ? waterService.amount * item.tenantCount : waterService.amount) : 30000 * item.tenantCount;
             
             const garbageService = serviceRates.find(r => r.name.toLowerCase().includes('rác'));
             const garbageFee = garbageService ? (garbageService.unit === 'person' ? garbageService.amount * item.tenantCount : garbageService.amount) : 20000;
