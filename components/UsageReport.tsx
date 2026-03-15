@@ -17,8 +17,12 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
     // Filter bills for selected month
     const monthlyBills = bills.filter(b => b.date.startsWith(selectedMonth));
 
-    const getRoomNumber = (roomId: string) => {
-        return rooms.find(r => r.id === roomId)?.roomNumber || 'Unknown';
+    const getRoomData = (roomId: string) => {
+        const room = rooms.find(r => r.id === roomId);
+        return {
+            number: room?.roomNumber || 'Unknown',
+            tenantCount: room?.tenantIds?.length || 0
+        };
     };
 
     const handleExportExcel = async () => {
@@ -27,14 +31,15 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
 
         // Columns setup
         worksheet.columns = [
-            { header: 'Tên phòng', key: 'room', width: 15 },
-            { header: 'Điện sử dụng (kWh)', key: 'elecUsage', width: 20 },
-            { header: 'Điện thành tiền', key: 'elecCost', width: 20 },
-            { header: 'Nước thành tiền', key: 'waterCost', width: 20 },
-            { header: 'Rác thành tiền', key: 'garbageCost', width: 20 },
-            { header: 'Wifi thành tiền', key: 'wifiCost', width: 20 },
-            { header: 'Khác', key: 'otherCost', width: 20 },
-            { header: 'Tổng cộng', key: 'total', width: 20 },
+            { header: 'Tên phòng', key: 'room', width: 12 },
+            { header: 'Số khách', key: 'tenantCount', width: 10 },
+            { header: 'Điện sử dụng (kWh)', key: 'elecUsage', width: 18 },
+            { header: 'Điện thành tiền', key: 'elecCost', width: 18 },
+            { header: 'Nước thành tiền', key: 'waterCost', width: 18 },
+            { header: 'Rác thành tiền', key: 'garbageCost', width: 15 },
+            { header: 'Wifi thành tiền', key: 'wifiCost', width: 15 },
+            { header: 'Khác', key: 'otherCost', width: 15 },
+            { header: 'Tổng cộng', key: 'total', width: 18 },
         ];
 
         // Style header
@@ -46,6 +51,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
         };
 
         // Initialize totals
+        let totalTenants = 0;
         let totalElecUsage = 0;
         let totalElecCost = 0;
         let totalWaterCost = 0;
@@ -56,6 +62,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
 
         // Add data
         monthlyBills.forEach(bill => {
+            const roomData = getRoomData(bill.roomId);
             const elecUsage = bill.electricityNew - bill.electricityOld;
             const otherTotal = bill.otherServices?.reduce((sum, s) => sum + s.amount, 0) || 0;
             const elecCost = elecUsage * bill.electricityRate;
@@ -63,6 +70,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             const garbageCost = bill.garbageFee;
             const wifiCost = bill.wifiFee || 0;
             
+            totalTenants += roomData.tenantCount;
             totalElecUsage += elecUsage;
             totalElecCost += elecCost;
             totalWaterCost += waterCost;
@@ -72,7 +80,8 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             totalOverall += bill.totalAmount;
 
             worksheet.addRow({
-                room: `P.${getRoomNumber(bill.roomId)}`,
+                room: `P.${roomData.number}`,
+                tenantCount: roomData.tenantCount,
                 elecUsage: elecUsage,
                 elecCost: elecCost,
                 waterCost: waterCost,
@@ -86,6 +95,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
         // Add Totals row to Excel
         const totalRow = worksheet.addRow({
             room: 'TỔNG CỘNG',
+            tenantCount: totalTenants,
             elecUsage: totalElecUsage,
             elecCost: totalElecCost,
             waterCost: totalWaterCost,
@@ -113,10 +123,12 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
 
     // Calculate totals for UI
     const totals = monthlyBills.reduce((acc, bill) => {
+        const roomData = getRoomData(bill.roomId);
         const elecUsage = bill.electricityNew - bill.electricityOld;
         const otherTotal = bill.otherServices?.reduce((sum, s) => sum + s.amount, 0) || 0;
         
         return {
+            tenants: acc.tenants + roomData.tenantCount,
             elecUsage: acc.elecUsage + elecUsage,
             elecCost: acc.elecCost + (elecUsage * bill.electricityRate),
             waterCost: acc.waterCost + bill.waterRate,
@@ -125,7 +137,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             otherCost: acc.otherCost + otherTotal,
             total: acc.total + bill.totalAmount
         };
-    }, { elecUsage: 0, elecCost: 0, waterCost: 0, garbageCost: 0, wifiCost: 0, otherCost: 0, total: 0 });
+    }, { tenants: 0, elecUsage: 0, elecCost: 0, waterCost: 0, garbageCost: 0, wifiCost: 0, otherCost: 0, total: 0 });
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -168,6 +180,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                     <thead className="bg-gray-50">
                         <tr>
                             <th rowSpan={2} className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Tên phòng</th>
+                            <th rowSpan={2} className="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Số khách</th>
                             <th colSpan={2} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-blue-50/50">Tiền điện ({selectedMonth})</th>
                             <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Tiền nước</th>
                             <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-gray-50">Tiền rác</th>
@@ -187,7 +200,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                     <tbody className="bg-white divide-y divide-gray-200">
                         {monthlyBills.length === 0 ? (
                             <tr>
-                                <td colSpan={10} className="px-6 py-20 text-center">
+                                <td colSpan={11} className="px-6 py-20 text-center">
                                     <div className="flex flex-col items-center">
                                         <div className="w-32 h-32 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                                             <Inbox className="w-16 h-16 text-gray-200" />
@@ -200,13 +213,17 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                         ) : (
                             <>
                                 {monthlyBills.map((bill) => {
+                                    const roomData = getRoomData(bill.roomId);
                                     const elecUsage = bill.electricityNew - bill.electricityOld;
                                     const otherTotal = bill.otherServices?.reduce((sum, s) => sum + s.amount, 0) || 0;
                                     
                                     return (
                                         <tr key={bill.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r bg-yellow-50/20">
-                                                P.{getRoomNumber(bill.roomId)}
+                                                P.{roomData.number}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-600 border-r">
+                                                {roomData.tenantCount}
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-center">
                                                 {elecUsage}
@@ -215,7 +232,14 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                                                 {formatCurrency(elecUsage * bill.electricityRate)}
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
-                                                {formatCurrency(bill.waterRate)}
+                                                <div className="flex flex-col">
+                                                    <span>{formatCurrency(bill.waterRate)}</span>
+                                                    {roomData.tenantCount > 1 && (
+                                                        <span className="text-[10px] text-gray-400 font-normal italic">
+                                                            ({formatCurrency(bill.waterRate / roomData.tenantCount)} x {roomData.tenantCount})
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right bg-gray-50/30">
                                                 {formatCurrency(bill.garbageFee)}
@@ -235,6 +259,9 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                                 <tr className="bg-yellow-50 font-bold border-t-2 border-gray-300">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r">
                                         TỔNG CỘNG
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-center">
+                                        {totals.tenants}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-center">
                                         {totals.elecUsage}
