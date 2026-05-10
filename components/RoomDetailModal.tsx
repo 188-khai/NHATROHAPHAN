@@ -793,12 +793,12 @@ export default function RoomDetailModal({
 
                                                                 <div className="mt-4 border-t pt-4 flex justify-between items-center">
                                                                     <div className="flex-shrink-0">
-                                                                        <img src="/qr-only.png" alt="QR Code" className="w-24 h-24 rounded border p-1" />
+                                                                        <img crossOrigin="anonymous" src={`https://img.vietqr.io/image/acb-49174287-compact2.png?amount=${calculatedBill.totalAmount}&addInfo=Thu%20tien%20phong%20${encodeURIComponent(room.roomNumber)}&accountName=HKD%20NHA%20TRO%20NGUYEN%20THI%20PHAN`} alt="QR Code" className="w-24 h-24 rounded border p-1" />
                                                                     </div>
                                                                     <div className="text-right">
                                                                         <p className="font-medium text-gray-900">Thông tin thanh toán</p>
-                                                                        <p className="text-xs text-gray-500 mt-1">MB Bank - HUA QUANG KHAI</p>
-                                                                        <p className="font-bold text-lg text-indigo-700 tracking-wide">666088887979</p>
+                                                                        <p className="text-xs text-gray-500 mt-1">ACB - HKD NHA TRO NGUYEN THI PHAN</p>
+                                                                        <p className="font-bold text-lg text-indigo-700 tracking-wide">49174287</p>
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex gap-2 mt-4">
@@ -978,19 +978,19 @@ export default function RoomDetailModal({
                             <div className="flex justify-between items-start mb-[60px]">
                                 {/* Left: QR Code */}
                                 <div className="flex-1">
-                                    <img src="/qr-only.png" alt="Payment QR" className="w-[120px] h-[120px] rounded" />
-                                    <p style={{ color: '#4b5563' }} className="text-xs mt-2">Quét mã để thanh toán</p>
+                                    <img crossOrigin="anonymous" src={`https://img.vietqr.io/image/acb-49174287-compact2.png?amount=${calculatedBill.totalAmount}&addInfo=Thu%20tien%20phong%20${encodeURIComponent(room.roomNumber)}&accountName=HKD%20NHA%20TRO%20NGUYEN%20THI%20PHAN`} alt="Payment QR" className="w-[120px] h-[120px] rounded" />
+                                    <p style={{ color: '#4b5563' }} className="text-xs mt-2 text-center w-[120px]">Quét mã thanh toán</p>
                                 </div>
 
                                 {/* Right: Amount & Bank Details */}
-                                <div className="text-right flex-[2] pr-4">
-                                    <p className="text-lg mb-2">Thành tiền</p>
-                                    <p style={{ color: '#124E57' }} className="text-[2.5rem] font-bold font-serif mb-4">{formatCurrency(calculatedBill.totalAmount)}</p>
+                                <div className="text-right flex-[2]">
+                                    <p className="text-lg mb-2 text-gray-600">Thành tiền</p>
+                                    <p style={{ color: '#124E57' }} className="text-[2.5rem] font-bold font-serif mb-4 leading-none">{formatCurrency(calculatedBill.totalAmount)}</p>
 
                                     <div className="text-sm">
-                                        <p className="mb-1 uppercase tracking-wider">Ngân hàng MB Bank</p>
-                                        <p className="mb-1 font-bold">HUA QUANG KHAI</p>
-                                        <p className="m-0 text-lg font-bold tracking-widest">666088887979</p>
+                                        <p className="mb-1 uppercase tracking-wider text-gray-500">Ngân hàng ACB</p>
+                                        <p className="mb-1 font-bold">HKD NHA TRO NGUYEN THI PHAN</p>
+                                        <p className="m-0 text-xl font-bold tracking-widest" style={{ color: '#124E57' }}>49174287</p>
                                     </div>
                                 </div>
                             </div>
