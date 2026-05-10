@@ -68,7 +68,7 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             const elecCost = elecUsage * bill.electricityRate;
             const waterCost = bill.waterRate;
             const garbageCost = bill.garbageFee;
-            const wifiCost = bill.wifiFee || 0;
+            // const wifiCost = bill.wifiFee || 0;
             
             totalTenants += roomData.tenantCount;
             totalElecUsage += elecUsage;
@@ -133,11 +133,10 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             elecCost: acc.elecCost + (elecUsage * bill.electricityRate),
             waterCost: acc.waterCost + bill.waterRate,
             garbageCost: acc.garbageCost + bill.garbageFee,
-            wifiCost: acc.wifiCost + (bill.wifiFee || 0),
             otherCost: acc.otherCost + otherTotal,
             total: acc.total + bill.totalAmount
         };
-    }, { tenants: 0, elecUsage: 0, elecCost: 0, waterCost: 0, garbageCost: 0, wifiCost: 0, otherCost: 0, total: 0 });
+    }, { tenants: 0, elecUsage: 0, elecCost: 0, waterCost: 0, garbageCost: 0, otherCost: 0, total: 0 });
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -184,13 +183,11 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                             <th colSpan={2} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-blue-50/50">Tiền điện ({selectedMonth})</th>
                             <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Tiền nước</th>
                             <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-gray-50">Tiền rác</th>
-                            <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r">Wifi</th>
                             <th colSpan={1} className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider border-r bg-gray-50">Dịch vụ khác</th>
                             <th rowSpan={2} className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Tổng cộng</th>
                         </tr>
                         <tr className="bg-gray-50 text-[10px]">
                             <th className="px-4 py-2 text-left text-gray-400 border-r">Sử dụng</th>
-                            <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
                             <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
                             <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
                             <th className="px-4 py-2 text-right text-gray-400 border-r">Thành tiền</th>
@@ -254,9 +251,6 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right bg-gray-50/30">
                                                 {formatCurrency(bill.garbageFee)}
                                             </td>
-                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">
-                                                {formatCurrency(bill.wifiFee || 0)}
-                                            </td>
                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right bg-gray-50/30">
                                                 {formatCurrency(otherTotal)}
                                             </td>
@@ -284,9 +278,6 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-right">
                                         {formatCurrency(totals.garbageCost)}
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-right">
-                                        {formatCurrency(totals.wifiCost)}
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-black border-r text-right">
                                         {formatCurrency(totals.otherCost)}

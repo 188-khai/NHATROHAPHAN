@@ -3,7 +3,7 @@ import { Dialog } from '@headlessui/react';
 import { X, Download, Image as ImageIcon } from 'lucide-react';
 import { Room, Bill } from '../types';
 import * as XLSX from 'xlsx';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 
 interface ElectricityReconciliationModalProps {
     isOpen: boolean;

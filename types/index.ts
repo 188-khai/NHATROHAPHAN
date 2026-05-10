@@ -29,7 +29,7 @@ export interface Bill {
     electricityRate: number; // 3500
     waterRate: number; // 30000 per person
     garbageFee: number; // 20000
-    wifiFee?: number; // 50000
+    // wifiFee?: number; // Removed per user request
     otherServices?: { name: string; amount: number }[];
     totalAmount: number;
     isPaid: boolean;

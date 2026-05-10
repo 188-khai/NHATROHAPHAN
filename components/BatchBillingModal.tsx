@@ -129,7 +129,7 @@ export default function BatchBillingModal({
             
             const wifiService = uniqueRates.find(r => r.name.toLowerCase().includes('wifi'));
             const isWifiPerPerson = wifiService?.unit === 'person';
-            const wifiFee = wifiService ? (isWifiPerPerson ? wifiService.amount * item.tenantCount : wifiService.amount) : 0;
+            // const wifiFee = wifiService ? (isWifiPerPerson ? wifiService.amount * item.tenantCount : wifiService.amount) : 0;
 
             // 3. Map other services
             const otherServices = uniqueRates.filter(r => 
@@ -144,7 +144,7 @@ export default function BatchBillingModal({
 
             // 4. Calculate Final Total (Sum of parts)
             const otherServicesTotal = otherServices.reduce((sum, s) => sum + s.amount, 0);
-            const totalAmount = item.roomPrice + electricityCost + waterCost + garbageFee + wifiFee + otherServicesTotal;
+            const totalAmount = item.roomPrice + electricityCost + waterCost + garbageFee + otherServicesTotal;
 
             return {
                 id: crypto.randomUUID(),
@@ -157,7 +157,7 @@ export default function BatchBillingModal({
                 electricityRate: elecRate,
                 waterRate: waterCost,
                 garbageFee: garbageFee,
-                wifiFee: wifiFee,
+                // wifiFee: wifiFee,
                 otherServices: otherServices,
                 totalAmount,
                 isPaid: false,

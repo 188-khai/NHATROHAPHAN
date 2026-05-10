@@ -50,7 +50,7 @@ const mapBillFromDB = (data: any): Bill => ({
     electricityRate: data.electricity_rate,
     waterRate: data.water_rate,
     garbageFee: data.garbage_fee,
-    wifiFee: data.wifi_fee,
+    // wifiFee: data.wifi_fee, // Removed per user request
     otherServices: data.other_services || [],
     totalAmount: data.total_amount,
     isPaid: data.is_paid,
@@ -67,7 +67,7 @@ const mapBillToDB = (bill: Bill) => ({
     electricity_rate: bill.electricityRate,
     water_rate: bill.waterRate,
     garbage_fee: bill.garbageFee,
-    wifi_fee: bill.wifiFee || 0,
+    // wifi_fee: bill.wifiFee || 0, // Removed per user request
     other_services: bill.otherServices || [],
     total_amount: bill.totalAmount,
     is_paid: bill.isPaid,

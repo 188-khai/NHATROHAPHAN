@@ -4,7 +4,7 @@ import { calculateBill, formatCurrency } from '../utils/calculations';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, Plus, Trash2, Pencil, CalendarDays, Camera, RefreshCw, Eye, ChevronUp, ChevronDown, Upload } from 'lucide-react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import AssetManagement from './AssetManagement';
 import ImageLightboxModal from './ImageLightboxModal';
 
@@ -238,7 +238,7 @@ export default function RoomDetailModal({
     const getBillPayload = (): Bill => {
         const waterCost = calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('nước'))?.amount || 0;
         const garbageFee = calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('rác'))?.amount || 0;
-        const wifiFee = calculatedBill.services.find((s: any) => s.name.toLowerCase().includes('wifi'))?.amount || 0;
+        // Wifi fee removed
         const otherServices = calculatedBill.services.filter((s: any) => 
             !s.name.toLowerCase().includes('nước') && 
             !s.name.toLowerCase().includes('rác') && 
@@ -253,7 +253,7 @@ export default function RoomDetailModal({
             electricityRate: calculatedBill.electricityRate,
             waterRate: waterCost,
             garbageFee: garbageFee,
-            wifiFee: wifiFee,
+            // wifiFee removed
             otherServices: otherServices,
             totalAmount: calculatedBill.totalAmount,
             isPaid: editingBill?.isPaid || false
@@ -323,7 +323,7 @@ export default function RoomDetailModal({
         const services = [];
         if (bill.waterRate) services.push({ name: 'Tiền nước', amount: bill.waterRate, count: roomTenants.length, unit: 'person', isPerPerson: true });
         if (bill.garbageFee) services.push({ name: 'Tiền rác', amount: bill.garbageFee, count: 1, unit: 'month', isPerPerson: false });
-        if (bill.wifiFee) services.push({ name: 'Tiền wifi', amount: bill.wifiFee, count: roomTenants.length, unit: 'person', isPerPerson: true });
+        // Wifi fee removed
         if (bill.otherServices) {
             bill.otherServices.forEach(s => services.push({ name: s.name, amount: s.amount, count: 1, unit: 'month', isPerPerson: false }));
         }
