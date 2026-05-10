@@ -269,10 +269,20 @@ export function useSupabaseData() {
         if (!supabase) return;
         const exists = bills.some(b => b.id === bill.id);
         if (exists) {
-            await supabase.from("bills").update(mapBillToDB(bill)).eq("id", bill.id);
+            const { error } = await supabase.from("bills").update(mapBillToDB(bill)).eq("id", bill.id);
+            if (error) {
+                console.error("Error updating bill:", error);
+                alert("Lỗi khi cập nhật hóa đơn: " + error.message);
+                return;
+            }
             setBills(prev => prev.map(b => b.id === bill.id ? bill : b));
         } else {
-            await supabase.from("bills").insert(mapBillToDB(bill));
+            const { error } = await supabase.from("bills").insert(mapBillToDB(bill));
+            if (error) {
+                console.error("Error inserting bill:", error);
+                alert("Lỗi khi lưu hóa đơn mới: " + error.message);
+                return;
+            }
             setBills(prev => [...prev, bill]);
         }
     };
@@ -281,7 +291,12 @@ export function useSupabaseData() {
         if (!supabase) return;
         if (newBills.length === 0) return;
         const dbBills = newBills.map(mapBillToDB);
-        await supabase.from("bills").insert(dbBills);
+        const { error } = await supabase.from("bills").insert(dbBills);
+        if (error) {
+            console.error("Error batch inserting bills:", error);
+            alert("Lỗi khi lưu danh sách hóa đơn: " + error.message);
+            return;
+        }
         // Fetches fresh to ensure sync
         const { data } = await supabase.from("bills").select("*");
         if (data) setBills(data.map(mapBillFromDB));
