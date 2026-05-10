@@ -37,7 +37,6 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             { header: 'Điện thành tiền', key: 'elecCost', width: 18 },
             { header: 'Nước thành tiền', key: 'waterCost', width: 18 },
             { header: 'Rác thành tiền', key: 'garbageCost', width: 15 },
-            { header: 'Wifi thành tiền', key: 'wifiCost', width: 15 },
             { header: 'Khác', key: 'otherCost', width: 15 },
             { header: 'Tổng cộng', key: 'total', width: 18 },
         ];
@@ -56,7 +55,6 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
         let totalElecCost = 0;
         let totalWaterCost = 0;
         let totalGarbageCost = 0;
-        let totalWifiCost = 0;
         let totalOtherCost = 0;
         let totalOverall = 0;
 
@@ -75,7 +73,6 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             totalElecCost += elecCost;
             totalWaterCost += waterCost;
             totalGarbageCost += garbageCost;
-            totalWifiCost += wifiCost;
             totalOtherCost += otherTotal;
             totalOverall += bill.totalAmount;
 
@@ -86,7 +83,6 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
                 elecCost: elecCost,
                 waterCost: waterCost,
                 garbageCost: garbageCost,
-                wifiCost: wifiCost,
                 otherCost: otherTotal,
                 total: bill.totalAmount
             });
@@ -100,7 +96,6 @@ export default function UsageReport({ bills, rooms, serviceRates }: UsageReportP
             elecCost: totalElecCost,
             waterCost: totalWaterCost,
             garbageCost: totalGarbageCost,
-            wifiCost: totalWifiCost,
             otherCost: totalOtherCost,
             total: totalOverall
         });
