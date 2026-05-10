@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Tag, CheckCircle2 } from 'lucide-react';
-import { ServiceRate, ServiceUnit } from '../types';
+import { Plus, Pencil, Trash2, Tag, CheckCircle2, Home } from 'lucide-react';
+import { ServiceRate, ServiceUnit, Room } from '../types';
 import { formatCurrency } from '../utils/calculations';
 
 interface ServiceManagementProps {
     serviceRates: ServiceRate[];
     roomCount: number;
+    rooms: Room[];
     onSaveServiceRate: (rate: ServiceRate) => void;
     onDeleteServiceRate: (id: string) => void;
 }
@@ -13,6 +14,7 @@ interface ServiceManagementProps {
 export default function ServiceManagement({
     serviceRates,
     roomCount,
+    rooms,
     onSaveServiceRate,
     onDeleteServiceRate,
 }: ServiceManagementProps) {
@@ -23,6 +25,7 @@ export default function ServiceManagement({
     const [formAmount, setFormAmount] = useState(0);
     const [formUnit, setFormUnit] = useState<ServiceUnit>('month');
     const [formDescription, setFormDescription] = useState('');
+    const [formRoomIds, setFormRoomIds] = useState<string[]>([]); // Empty = All Rooms
 
     const openModal = (rate?: ServiceRate) => {
         if (rate) {
@@ -31,12 +34,14 @@ export default function ServiceManagement({
             setFormAmount(rate.amount);
             setFormUnit(rate.unit);
             setFormDescription(rate.description || '');
+            setFormRoomIds(rate.applicableRoomIds || []);
         } else {
             setEditingRate(null);
             setFormName('');
             setFormAmount(0);
             setFormUnit('month');
             setFormDescription('');
+            setFormRoomIds([]);
         }
         setIsModalOpen(true);
     };
@@ -53,6 +58,7 @@ export default function ServiceManagement({
             amount: formAmount,
             unit: formUnit,
             description: formDescription,
+            applicableRoomIds: formRoomIds,
         };
 
         onSaveServiceRate(newRate);
@@ -127,7 +133,7 @@ export default function ServiceManagement({
                                     {formatCurrency(rate.amount)}/{rate.unit === 'kwh' ? 'kWh' : rate.unit === 'person' ? 'Người' : 'Tháng'}
                                 </p>
                                 <p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-1 italic">
-                                    <CheckCircle2 className="w-3 h-3" /> Đang áp dụng cho {roomCount} phòng
+                                    <CheckCircle2 className="w-3 h-3" /> {rate.applicableRoomIds && rate.applicableRoomIds.length > 0 ? `Đang áp dụng cho ${rate.applicableRoomIds.length} phòng` : `Đang áp dụng cho tất cả (${roomCount} phòng)`}
                                 </p>
                             </div>
 
@@ -209,8 +215,48 @@ export default function ServiceManagement({
                                     placeholder="Mô tả chi tiết..."
                                     value={formDescription}
                                     onChange={(e) => setFormDescription(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-black h-24 resize-none"
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-black h-20 resize-none"
                                 />
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="block text-sm font-semibold text-gray-700">Áp dụng cho phòng</label>
+                                    <button 
+                                        onClick={() => setFormRoomIds(formRoomIds.length === rooms.length ? [] : rooms.map(r => r.id))}
+                                        className="text-xs text-indigo-600 font-bold hover:underline"
+                                    >
+                                        {formRoomIds.length === rooms.length ? 'Bỏ chọn hết' : 'Chọn tất cả'}
+                                    </button>
+                                </div>
+                                <div className="max-h-40 overflow-y-auto border border-gray-100 rounded-xl p-3 grid grid-cols-3 gap-2 bg-gray-50/50">
+                                    {rooms.map(room => (
+                                        <button
+                                            key={room.id}
+                                            onClick={() => {
+                                                if (formRoomIds.includes(room.id)) {
+                                                    setFormRoomIds(formRoomIds.filter(id => id !== room.id));
+                                                } else {
+                                                    setFormRoomIds([...formRoomIds, room.id]);
+                                                }
+                                            }}
+                                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                                                formRoomIds.includes(room.id)
+                                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                                    : 'bg-white text-gray-600 border-gray-100 hover:border-indigo-200'
+                                            }`}
+                                        >
+                                            <Home className="w-3 h-3" />
+                                            P.{room.roomNumber}
+                                        </button>
+                                    ))}
+                                    {rooms.length === 0 && (
+                                        <p className="col-span-3 text-center text-gray-400 py-4 italic">Chưa có phòng nào</p>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1 italic">
+                                    * Để trống nếu muốn áp dụng cho tất cả các phòng.
+                                </p>
                             </div>
                         </div>
 

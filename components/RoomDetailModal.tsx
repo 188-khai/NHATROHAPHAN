@@ -28,6 +28,7 @@ interface RoomDetailModalProps {
     onAddAsset?: (asset: Asset) => void;
     onUpdateAsset?: (asset: Asset) => void;
     onDeleteAsset?: (assetId: string) => void;
+    onDeleteRoom?: (roomId: string) => void;
 }
 
 export default function RoomDetailModal({
@@ -50,6 +51,7 @@ export default function RoomDetailModal({
     onAddAsset = () => { },
     onUpdateAsset = () => { },
     onDeleteAsset = () => { },
+    onDeleteRoom = () => { },
 }: RoomDetailModalProps) {
     const [activeTab, setActiveTab] = useState<'info' | 'tenants' | 'bill' | 'assets'>('info');
     const [editedRoom, setEditedRoom] = useState<Room | null>(room);
@@ -173,29 +175,46 @@ export default function RoomDetailModal({
         }
     };
 
+    const handleDeleteRoom = () => {
+        if (!room) return;
+        if (roomTenants.length > 0) {
+            alert('Không thể xóa phòng đang có khách thuê. Vui lòng xóa khách trước.');
+            return;
+        }
+        if (confirm(`Bạn có chắc chắn muốn xóa phòng ${room.roomNumber}? Thao tác này khôn thể hoàn tác.`)) {
+            onDeleteRoom(room.id);
+            onClose();
+        }
+    };
+
     const handleCalculateBill = () => {
         if (!room) return;
-        
-        // Deduplicate rates
-        const uniqueRates = serviceRates.reduce((acc, current) => {
-            const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
-            if (!x) return acc.concat([current]);
-            else return acc;
-        }, [] as ServiceRate[]);
 
-        const elecRate = uniqueRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
+        const tenantCount = roomTenants.length;
+
+        // 1. Get Core Rates with Deduplication (prefer first match)
+        // Filter by room assignment if specified
+        const uniqueRates = serviceRates
+            .filter(r => !r.applicableRoomIds || r.applicableRoomIds.length === 0 || r.applicableRoomIds.includes(room.id))
+            .reduce((acc, current) => {
+                const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+                if (!x) return acc.concat([current]);
+                else return acc;
+            }, [] as ServiceRate[]);
+
         const electricityUsage = Math.max(0, electricityNew - electricityOld);
+        const elecRate = uniqueRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
         const electricityCost = electricityUsage * elecRate;
 
         // Dynamic calculation for all other rates
         const services = uniqueRates.filter(s => !s.name.toLowerCase().includes('điện')).map(s => {
             const isPerPerson = s.unit === 'person' || (s.name.toLowerCase().includes('nước') && s.unit !== 'room');
-            const count = isPerPerson ? roomTenants.length : 1;
+            const count = isPerPerson ? tenantCount : 1;
             const total = s.amount * count;
             
             return {
                 name: s.name,
-                rate: s.amount,
+                rate: Number(s.amount),
                 unit: s.unit,
                 count: count,
                 amount: total,
@@ -301,13 +320,21 @@ export default function RoomDetailModal({
 
     const handleViewBillFromHistory = (bill: Bill) => {
         // We simulate a calculatedBill state so the invoice template renders it fully
+        const services = [];
+        if (bill.waterRate) services.push({ name: 'Tiền nước', amount: bill.waterRate, count: roomTenants.length, unit: 'person', isPerPerson: true });
+        if (bill.garbageFee) services.push({ name: 'Tiền rác', amount: bill.garbageFee, count: 1, unit: 'month', isPerPerson: false });
+        if (bill.wifiFee) services.push({ name: 'Tiền wifi', amount: bill.wifiFee, count: roomTenants.length, unit: 'person', isPerPerson: true });
+        if (bill.otherServices) {
+            bill.otherServices.forEach(s => services.push({ name: s.name, amount: s.amount, count: 1, unit: 'month', isPerPerson: false }));
+        }
+
         const simulatedCalculation = {
             electricityUsage: bill.electricityNew - bill.electricityOld,
             electricityCost: (bill.electricityNew - bill.electricityOld) * bill.electricityRate!,
-            waterCost: bill.waterRate! * roomTenants.length, // Rough approx if rate changed, but we rely on what is saved
-            garbageFee: bill.garbageFee!,
-            roomPrice: bill.totalAmount - ((bill.electricityNew - bill.electricityOld) * bill.electricityRate!) - (bill.waterRate! * roomTenants.length) - bill.garbageFee!,
+            services: services,
+            roomPrice: bill.totalAmount - ((bill.electricityNew - bill.electricityOld) * bill.electricityRate!) - services.reduce((sum, s) => sum + s.amount, 0),
             totalAmount: bill.totalAmount,
+            electricityRate: bill.electricityRate
         };
         
         // Temporarily set states to show this bill
@@ -488,6 +515,16 @@ export default function RoomDetailModal({
                                             {activeTab === 'info' && editedRoom && (
                                                 <div className="space-y-4">
                                                     <div>
+                                                        <label htmlFor="room-number" className="block text-sm font-medium text-gray-700">Tên phòng</label>
+                                                        <input
+                                                            id="room-number"
+                                                            type="text"
+                                                            value={editedRoom.roomNumber}
+                                                            onChange={(e) => setEditedRoom({ ...editedRoom, roomNumber: e.target.value })}
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-black"
+                                                        />
+                                                    </div>
+                                                    <div>
                                                         <label htmlFor="room-price" className="block text-sm font-medium text-gray-700">Giá phòng</label>
                                                         <input
                                                             id="room-price"
@@ -515,12 +552,21 @@ export default function RoomDetailModal({
                                                             <option value="maintenance">Bảo trì</option>
                                                         </select>
                                                     </div>
-                                                    <button
-                                                        onClick={handleSaveRoom}
-                                                        className="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
-                                                    >
-                                                        Lưu thay đổi
-                                                    </button>
+                                                    <div className="flex flex-col gap-2 pt-2">
+                                                        <button
+                                                            onClick={handleSaveRoom}
+                                                            className="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition-all"
+                                                        >
+                                                            Lưu thay đổi
+                                                        </button>
+                                                        <button
+                                                            onClick={handleDeleteRoom}
+                                                            className="w-full inline-flex justify-center rounded-md border border-red-200 bg-red-50 py-2 px-4 text-sm font-medium text-red-600 shadow-sm hover:bg-red-100 active:scale-95 transition-all"
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                            Xóa phòng
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -904,18 +950,14 @@ export default function RoomDetailModal({
                                             <td className="p-4">{calculatedBill.electricityUsage} số</td>
                                             <td className="p-4 text-right">{formatCurrency(calculatedBill.electricityCost)}</td>
                                         </tr>
-                                        <tr style={{ borderBottom: '1px solid #2a7f8533' }}>
-                                            <td className="p-4 font-bold">Tiền nước</td>
-                                            <td className="p-4">{roomTenants.length} người</td>
-                                            <td className="p-4">{roomTenants.length} suất</td>
-                                            <td className="p-4 text-right">{formatCurrency(calculatedBill.waterCost)}</td>
-                                        </tr>
-                                        <tr style={{ borderBottom: '1px solid #2a7f8533' }}>
-                                            <td className="p-4 font-bold">Tiền rác</td>
-                                            <td className="p-4">Cố định</td>
-                                            <td className="p-4">1 phòng</td>
-                                            <td className="p-4 text-right">{formatCurrency(calculatedBill.garbageFee)}</td>
-                                        </tr>
+                                        {calculatedBill.services && calculatedBill.services.map((s: any, idx: number) => (
+                                            <tr key={idx} style={{ borderBottom: '1px solid #2a7f8533' }}>
+                                                <td className="p-4 font-bold">{s.name}</td>
+                                                <td className="p-4">{s.isPerPerson ? `${s.count} người` : 'Cố định'}</td>
+                                                <td className="p-4">{s.count} {s.isPerPerson ? 'suất' : 'phòng'}</td>
+                                                <td className="p-4 text-right">{formatCurrency(s.amount)}</td>
+                                            </tr>
+                                        ))}
                                         <tr style={{ borderBottom: '1px solid #2a7f8533' }}>
                                             <td className="p-4 font-bold">Tiền phòng</td>
                                             <td className="p-4">Cố định</td>

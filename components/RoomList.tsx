@@ -1,11 +1,12 @@
 import { Room, Tenant } from '../types';
 import { formatCurrency } from '../utils/calculations';
 import clsx from 'clsx';
+import { Pencil } from 'lucide-react';
 
 interface RoomListProps {
     rooms: Room[];
     tenants: Tenant[];
-    onRoomClick: (room: Room) => void;
+    onRoomClick: (room: Room, initialTab?: 'info' | 'tenants' | 'bill' | 'assets') => void;
 }
 
 export default function RoomList({ rooms, tenants, onRoomClick }: RoomListProps) {
@@ -26,16 +27,28 @@ export default function RoomList({ rooms, tenants, onRoomClick }: RoomListProps)
                             <span className="text-lg font-bold text-gray-900">
                                 P.{room.roomNumber}
                             </span>
-                            <span
-                                className={clsx(
-                                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                                    room.status === 'available'
-                                        ? 'bg-red-100 text-red-800'
-                                        : 'bg-green-100 text-green-800'
-                                )}
-                            >
-                                {room.status === 'available' ? 'Trống' : 'Đã thuê'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRoomClick(room, 'info');
+                                    }}
+                                    className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                                    title="Chỉnh sửa tên/giá phòng"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <span
+                                    className={clsx(
+                                        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                        room.status === 'available'
+                                            ? 'bg-red-100 text-red-800'
+                                            : 'bg-green-100 text-green-800'
+                                    )}
+                                >
+                                    {room.status === 'available' ? 'Trống' : 'Đã thuê'}
+                                </span>
+                            </div>
                         </div>
                         <p className="text-sm text-gray-500 mb-1">
                             Giá: {formatCurrency(room.price)}

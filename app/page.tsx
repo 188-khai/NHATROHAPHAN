@@ -23,25 +23,29 @@ import FinanceTracker from '@/components/finance/FinanceTracker';
 export default function Home() {
   const {
     rooms, tenants, bills, assets, taxSettings, serviceRates, loading,
-    saveRoom, saveTenant, deleteTenant,
+    saveRoom, deleteRoom, saveTenant, deleteTenant,
     saveBill, saveBills, deleteBill,
     saveAsset, deleteAsset, saveTaxSettings,
     saveServiceRate, deleteServiceRate
   } = useSupabaseData(); // Use Supabase Hook
 
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRoomDetailModalOpen, setIsRoomDetailModalOpen] = useState(false);
   const [isBatchBillingOpen, setIsBatchBillingOpen] = useState(false);
   const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
   const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
   const [activeView, setActiveView] = useState<'rooms' | 'tenants' | 'finance' | 'tax' | 'services'>('rooms');
 
+  const [isAssetSummaryOpen, setIsAssetSummaryOpen] = useState(false);
+  const [roomActiveTab, setRoomActiveTab] = useState<'info' | 'tenants' | 'bill' | 'assets'>('info');
+
   // Show loading state
 
 
-  const handleRoomClick = (room: Room) => {
+  const handleRoomClick = (room: Room, initialTab?: 'info' | 'tenants' | 'bill' | 'assets') => {
     setSelectedRoom(room);
-    setIsModalOpen(true);
+    setRoomActiveTab(initialTab || 'info');
+    setIsRoomDetailModalOpen(true);
   };
 
   const handleUpdateRoom = async (updatedRoom: Room) => {
@@ -103,12 +107,12 @@ export default function Home() {
     if (room) {
       setSelectedRoom(room);
       setTargetBillToEdit(bill);
-      setIsModalOpen(true);
+      setIsRoomDetailModalOpen(true);
     }
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    setIsRoomDetailModalOpen(false);
     setTargetBillToEdit(null);
   };
 
@@ -348,6 +352,7 @@ export default function Home() {
                 roomCount={rooms.length}
                 onSaveServiceRate={saveServiceRate}
                 onDeleteServiceRate={deleteServiceRate}
+                rooms={rooms}
               />
               <UsageReport 
                 bills={bills} 
@@ -361,16 +366,17 @@ export default function Home() {
         {selectedRoom && (
           <RoomDetailModal
             key={selectedRoom.id}
-            isOpen={isModalOpen}
+            isOpen={isRoomDetailModalOpen}
             onClose={handleCloseModal}
             room={selectedRoom}
             initialEditingBill={targetBillToEdit}
-            initialActiveTab={targetBillToEdit ? 'bill' : 'info'}
+            initialActiveTab={targetBillToEdit ? 'bill' : roomActiveTab}
             tenants={tenants}
             bills={bills}
             assets={assets}
             serviceRates={serviceRates}
             onUpdateRoom={handleUpdateRoom}
+            onDeleteRoom={deleteRoom}
             onUpdateTenant={handleUpdateTenant}
             onAddTenant={handleAddTenant}
             onRemoveTenant={handleRemoveTenant}

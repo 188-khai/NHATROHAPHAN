@@ -106,12 +106,14 @@ export default function BatchBillingModal({
             const electricityUsage = Math.max(0, item.electricityNew - item.electricityOld);
             
             // 1. Get Core Rates with Deduplication (prefer first match)
-            // Deduplicate by name to prevent double counting if user has duplicate configs
-            const uniqueRates = serviceRates.reduce((acc, current) => {
-                const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
-                if (!x) return acc.concat([current]);
-                else return acc;
-            }, [] as ServiceRate[]);
+            // Filter by room assignment if specified
+            const uniqueRates = serviceRates
+                .filter(r => !r.applicableRoomIds || r.applicableRoomIds.length === 0 || r.applicableRoomIds.includes(item.roomId))
+                .reduce((acc, current) => {
+                    const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+                    if (!x) return acc.concat([current]);
+                    else return acc;
+                }, [] as ServiceRate[]);
 
             const elecRate = uniqueRates.find(r => r.name.toLowerCase().includes('điện'))?.amount || 3500;
             const electricityCost = electricityUsage * elecRate;

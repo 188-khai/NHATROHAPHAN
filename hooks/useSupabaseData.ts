@@ -81,6 +81,7 @@ const mapServiceRateFromDB = (data: any): ServiceRate => ({
     amount: data.amount,
     unit: data.unit,
     description: data.description,
+    applicableRoomIds: data.applicable_room_ids || [],
 });
 
 const mapServiceRateToDB = (rate: ServiceRate) => ({
@@ -89,6 +90,7 @@ const mapServiceRateToDB = (rate: ServiceRate) => ({
     amount: rate.amount,
     unit: rate.unit,
     description: rate.description,
+    applicable_room_ids: rate.applicableRoomIds || [],
 });
 
 const mapAssetFromDB = (data: any): Asset => ({

@@ -43,6 +43,7 @@ export interface ServiceRate {
     amount: number;
     unit: ServiceUnit;
     description?: string;
+    applicableRoomIds?: string[]; // List of Room IDs
 }
 
 export type AssetStatus = 'new' | 'good' | 'maintenance' | 'broken';
