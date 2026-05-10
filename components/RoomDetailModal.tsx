@@ -793,7 +793,7 @@ export default function RoomDetailModal({
 
                                                                 <div className="mt-4 border-t pt-4 flex justify-between items-center">
                                                                     <div className="flex-shrink-0">
-                                                                        <img crossOrigin="anonymous" src={`https://img.vietqr.io/image/acb-49174287-compact2.png?amount=${calculatedBill.totalAmount}&addInfo=Thu%20tien%20phong%20${encodeURIComponent(room.roomNumber)}&accountName=HKD%20NHA%20TRO%20NGUYEN%20THI%20PHAN`} alt="QR Code" className="w-24 h-24 rounded border p-1" />
+                                                                        <img crossOrigin="anonymous" src={`https://img.vietqr.io/image/acb-49174287-compact2.png?amount=${calculatedBill.totalAmount}&addInfo=Thu%20tien%20phong%20${encodeURIComponent(room.roomNumber)}&accountName=HKD%20NHA%20TRO%20NGUYEN%20THI%20PHAN`} alt="QR Code" className="w-32 h-32 rounded border p-1" />
                                                                     </div>
                                                                     <div className="text-right">
                                                                         <p className="font-medium text-gray-900">Thông tin thanh toán</p>
@@ -978,19 +978,19 @@ export default function RoomDetailModal({
                             <div className="flex justify-between items-start mb-[60px]">
                                 {/* Left: QR Code */}
                                 <div className="flex-1">
-                                    <img crossOrigin="anonymous" src={`https://img.vietqr.io/image/acb-49174287-compact2.png?amount=${calculatedBill.totalAmount}&addInfo=Thu%20tien%20phong%20${encodeURIComponent(room.roomNumber)}&accountName=HKD%20NHA%20TRO%20NGUYEN%20THI%20PHAN`} alt="Payment QR" className="w-[120px] h-[120px] rounded" />
-                                    <p style={{ color: '#4b5563' }} className="text-xs mt-2 text-center w-[120px]">Quét mã thanh toán</p>
+                                    <img crossOrigin="anonymous" src={`https://img.vietqr.io/image/acb-49174287-compact2.png?amount=${calculatedBill.totalAmount}&addInfo=Thu%20tien%20phong%20${encodeURIComponent(room.roomNumber)}&accountName=HKD%20NHA%20TRO%20NGUYEN%20THI%20PHAN`} alt="Payment QR" className="w-[180px] h-[180px] rounded" />
+                                    <p style={{ color: '#4b5563' }} className="text-sm mt-3 text-center w-[180px] font-medium">Quét mã thanh toán</p>
                                 </div>
 
                                 {/* Right: Amount & Bank Details */}
-                                <div className="text-right flex-[2]">
-                                    <p className="text-lg mb-2 text-gray-600">Thành tiền</p>
-                                    <p style={{ color: '#124E57' }} className="text-[2.5rem] font-bold font-serif mb-4 leading-none">{formatCurrency(calculatedBill.totalAmount)}</p>
+                                <div className="flex-[2] flex flex-col items-end justify-center">
+                                    <p className="text-lg mb-1 text-gray-600 font-medium">Thành tiền</p>
+                                    <p style={{ color: '#124E57' }} className="text-[2.75rem] font-bold mb-4 leading-none">{formatCurrency(calculatedBill.totalAmount)}</p>
 
-                                    <div className="text-sm">
+                                    <div className="text-right text-sm flex flex-col items-end">
                                         <p className="mb-1 uppercase tracking-wider text-gray-500">Ngân hàng ACB</p>
-                                        <p className="mb-1 font-bold">HKD NHA TRO NGUYEN THI PHAN</p>
-                                        <p className="m-0 text-xl font-bold tracking-widest" style={{ color: '#124E57' }}>49174287</p>
+                                        <p className="mb-1 font-bold text-base">HKD NHA TRO NGUYEN THI PHAN</p>
+                                        <p className="m-0 text-2xl font-bold tracking-widest mt-1" style={{ color: '#124E57' }}>49174287</p>
                                     </div>
                                 </div>
                             </div>
