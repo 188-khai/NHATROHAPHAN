@@ -7,6 +7,7 @@ import { Room, Tenant, Bill, Asset, ServiceRate } from '@/types';
 import DashboardStats from '@/components/DashboardStats';
 import RoomList from '@/components/RoomList';
 import TenantList from '@/components/TenantList';
+import Sidebar from '@/components/Sidebar';
 import RoomDetailModal from '@/components/RoomDetailModal';
 import FinancialOverview from '@/components/FinancialOverview';
 import BatchBillingModal from '@/components/BatchBillingModal';
@@ -22,7 +23,7 @@ import FinanceTracker from '@/components/finance/FinanceTracker';
 
 export default function Home() {
   const {
-    rooms, tenants, bills, assets, taxSettings, serviceRates, loading,
+    rooms, tenants, bills, assets, taxSettings, serviceRates, profile, activityLogs, loading,
     saveRoom, deleteRoom, saveTenant, deleteTenant,
     saveBill, saveBills, deleteBill,
     saveAsset, deleteAsset, saveTaxSettings,
@@ -142,292 +143,297 @@ export default function Home() {
   }
 
   return (
-    <main
-      className="min-h-screen p-2 sm:p-6 lg:p-8 bg-cover bg-center bg-fixed bg-no-repeat pb-20 sm:pb-6"
-      style={{ backgroundImage: "url('/background.jpg')" }}
-    >
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-8 flex justify-between items-center bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm">
-          <div>
-            <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900">
-              Quản Lý Nhà Trọ
-            </h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Hệ thống quản lý phòng trọ đơn giản & hiệu quả
-            </p>
-          </div>
-          {/* Logout Button (Ideally handled in a header component) */}
-        </header>
+    <main className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Sidebar Left */}
+      <Sidebar profile={profile} logs={activityLogs} />
 
-        {rooms.length === 0 && !loading && (
-          <div className="bg-white rounded-xl p-8 mb-8 text-center shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Chưa có dữ liệu phòng trọ</h2>
-            <p className="text-gray-500 mb-6">
-              Bạn đang sử dụng phiên bản mới trên đám mây. Dữ liệu cũ ở máy tính (localhost) không tự chuyển sang đây được.
-              <br />
-              Hãy bấm nút dưới đây để tạo nhanh dữ liệu mẫu (20 phòng) để dùng thử ngay.
-            </p>
-            <button
-              onClick={async () => {
-                const confirm = window.confirm("Bạn có chắc chắn muốn tạo dữ liệu mẫu không?");
-                if (!confirm) return;
+      {/* Main Content Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div 
+          className="min-h-screen p-4 sm:p-6 lg:p-8 bg-cover bg-center bg-fixed bg-no-repeat"
+          style={{ backgroundImage: "url('/background.jpg')" }}
+        >
+          <div className="mx-auto max-w-7xl">
+            <header className="mb-8 flex justify-between items-center bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white/20">
+              <div>
+                <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900">
+                  Dashboard
+                </h1>
+                <p className="mt-1 text-sm text-gray-600">
+                  Chào mừng quay trở lại, {profile?.fullName || "Chủ nhà"}!
+                </p>
+              </div>
+            </header>
 
-                const idMap = new Map();
-                // Batch insert rooms
-                for (const room of initialRooms) {
-                  const newId = crypto.randomUUID();
-                  idMap.set(room.id, newId);
-                  await saveRoom({ ...room, id: newId });
-                }
-                // Batch insert assets
-                for (const asset of initialAssets) {
-                  const newRoomId = idMap.get(asset.roomId);
-                  if (newRoomId) {
-                    await saveAsset({ ...asset, id: crypto.randomUUID(), roomId: newRoomId });
-                  }
-                }
-                window.location.reload();
-              }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-transform transform hover:scale-105"
-            >
-              🚀 Tạo Dữ Liệu Mẫu (20 Phòng)
-            </button>
-          </div>
-        )}
+            {rooms.length === 0 && !loading && (
+              <div className="bg-white rounded-xl p-8 mb-8 text-center shadow-sm border border-gray-100">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Chưa có dữ liệu phòng trọ</h2>
+                <p className="text-gray-500 mb-6">
+                  Hãy bấm nút dưới đây để tạo nhanh dữ liệu mẫu (20 phòng) để dùng thử ngay.
+                </p>
+                <button
+                  onClick={async () => {
+                    const confirm = window.confirm("Bạn có chắc chắn muốn tạo dữ liệu mẫu không?");
+                    if (!confirm) return;
 
-        <DashboardStats rooms={rooms} />
+                    const idMap = new Map();
+                    for (const room of initialRooms) {
+                      const newId = crypto.randomUUID();
+                      idMap.set(room.id, newId);
+                      await saveRoom({ ...room, id: newId });
+                    }
+                    for (const asset of initialAssets) {
+                      const newRoomId = idMap.get(asset.roomId);
+                      if (newRoomId) {
+                        await saveAsset({ ...asset, id: crypto.randomUUID(), roomId: newRoomId });
+                      }
+                    }
+                    window.location.reload();
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-transform transform hover:scale-105"
+                >
+                  🚀 Tạo Dữ Liệu Mẫu (20 Phòng)
+                </button>
+              </div>
+            )}
 
-        {/* Revenue Chart */}
-        <RevenueChart bills={bills} />
+            <DashboardStats rooms={rooms} />
 
-        {/* Maintenance Alert Widget */}
-        {assets.some(a => {
-          if (!a.lastMaintenanceDate || !a.maintenanceIntervalMonths) return false;
-          const lastDate = new Date(a.lastMaintenanceDate);
-          const dueDate = new Date(new Date(lastDate).setMonth(lastDate.getMonth() + a.maintenanceIntervalMonths));
-          const today = new Date();
-          const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          return diffDays <= 30; // Show if due within 30 days
-        }) && (
-            <div className="mb-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-yellow-800 mb-2">🔧 Nhắc nhở bảo trì sắp tới</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {assets
-                  .filter(a => {
-                    if (!a.lastMaintenanceDate || !a.maintenanceIntervalMonths) return false;
-                    const lastDate = new Date(a.lastMaintenanceDate);
-                    const dueDate = new Date(new Date(lastDate).setMonth(lastDate.getMonth() + a.maintenanceIntervalMonths));
-                    const today = new Date();
-                    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                    return diffDays <= 30;
-                  })
-                  .map(asset => {
-                    const room = rooms.find(r => r.id === asset.roomId);
-                    const lastDate = new Date(asset.lastMaintenanceDate!);
-                    const dueDate = new Date(new Date(lastDate).setMonth(lastDate.getMonth() + asset.maintenanceIntervalMonths!));
-                    const today = new Date();
-                    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            {/* Revenue Chart */}
+            <RevenueChart bills={bills} />
 
-                    return (
-                      <div key={asset.id} className="bg-white p-3 rounded border border-yellow-100 shadow-sm flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-gray-900">{asset.name} <span className="text-gray-500 text-xs">(P.{room?.roomNumber})</span></p>
-                          <p className={`text-xs ${diffDays < 0 ? 'text-red-600 font-bold' : 'text-yellow-600'}`}>
-                            {diffDays < 0 ? `Đã quá hạn ${Math.abs(diffDays)} ngày` : `Còn ${diffDays} ngày nữa`}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => room && handleRoomClick(room)}
-                          className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200"
-                        >
-                          Xem
-                        </button>
-                      </div>
-                    );
-                  })
-                }
+            {/* Maintenance Alert Widget */}
+            {assets.some(a => {
+              if (!a.lastMaintenanceDate || !a.maintenanceIntervalMonths) return false;
+              const lastDate = new Date(a.lastMaintenanceDate);
+              const dueDate = new Date(new Date(lastDate).setMonth(lastDate.getMonth() + a.maintenanceIntervalMonths));
+              const today = new Date();
+              const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              return diffDays <= 30;
+            }) && (
+                <div className="mb-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-yellow-800 mb-2">🔧 Nhắc nhở bảo trì sắp tới</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {assets
+                      .filter(a => {
+                        if (!a.lastMaintenanceDate || !a.maintenanceIntervalMonths) return false;
+                        const lastDate = new Date(a.lastMaintenanceDate);
+                        const dueDate = new Date(new Date(lastDate).setMonth(lastDate.getMonth() + a.maintenanceIntervalMonths));
+                        const today = new Date();
+                        const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        return diffDays <= 30;
+                      })
+                      .map(asset => {
+                        const room = rooms.find(r => r.id === asset.roomId);
+                        const lastDate = new Date(asset.lastMaintenanceDate!);
+                        const dueDate = new Date(new Date(lastDate).setMonth(lastDate.getMonth() + asset.maintenanceIntervalMonths!));
+                        const today = new Date();
+                        const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                        return (
+                          <div key={asset.id} className="bg-white p-3 rounded border border-yellow-100 shadow-sm flex justify-between items-center">
+                            <div>
+                              <p className="font-medium text-gray-900">{asset.name} <span className="text-gray-500 text-xs">(P.{room?.roomNumber})</span></p>
+                              <p className={`text-xs ${diffDays < 0 ? 'text-red-600 font-bold' : 'text-yellow-600'}`}>
+                                {diffDays < 0 ? `Đã quá hạn ${Math.abs(diffDays)} ngày` : `Còn ${diffDays} ngày nữa`}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => room && handleRoomClick(room)}
+                              className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200"
+                            >
+                              Xem
+                            </button>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                </div>
+              )}
+
+            <div className="flex flex-wrap gap-3 mb-8">
+              <button
+                onClick={() => setIsAddRoomModalOpen(true)}
+                className="inline-flex items-center rounded-md border border-transparent bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                + Thêm phòng mới
+              </button>
+              <button
+                onClick={() => setIsBatchBillingOpen(true)}
+                className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                Tính tiền nhanh
+              </button>
+              <button
+                onClick={() => setIsReconciliationModalOpen(true)}
+                className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              >
+                Đối soát điện
+              </button>
+            </div>
+
+            <div className="mt-8">
+              <div className="mb-4 border-b border-gray-200 bg-white/90 backdrop-blur-sm rounded-t-xl px-4 pt-2 shadow-sm border border-gray-100">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setActiveView('rooms')}
+                    className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeView === 'rooms'
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                  >
+                    Danh sách phòng
+                  </button>
+                  <button
+                    onClick={() => setActiveView('tenants')}
+                    className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeView === 'tenants'
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                  >
+                    Tất cả khách thuê
+                  </button>
+                  <button
+                    onClick={() => setActiveView('finance')}
+                    className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeView === 'finance'
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                  >
+                    Cá Nhân (Lương & OT)
+                  </button>
+                  <button
+                    onClick={() => setActiveView('tax')}
+                    className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeView === 'tax'
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                  >
+                    Hồ Sơ Thuế & Lợi Nhuận
+                  </button>
+                  <button
+                    onClick={() => setActiveView('services')}
+                    className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeView === 'services'
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                  >
+                    Dịch Vụ & Báo Cáo
+                  </button>
+                </nav>
+              </div>
+
+              <div className="bg-white/50 backdrop-blur-sm rounded-b-xl overflow-hidden min-h-[400px]">
+                {activeView === 'rooms' ? (
+                  <RoomList rooms={rooms} tenants={tenants} onRoomClick={handleRoomClick} />
+                ) : activeView === 'tenants' ? (
+                  <div>
+                    <FinancialOverview
+                      bills={bills}
+                      rooms={rooms}
+                      tenants={tenants}
+                      taxSettings={taxSettings}
+                      onEditBill={handleEditBillFromHistory}
+                      onDeleteBill={handleDeleteBill}
+                    />
+                    <div className="mt-8 bg-white rounded-lg shadow overflow-hidden">
+                      <TenantList
+                        tenants={tenants}
+                        rooms={rooms}
+                        onUpdateTenant={handleUpdateTenant}
+                        onRemoveTenant={handleRemoveTenant}
+                      />
+                    </div>
+                  </div>
+                ) : activeView === 'finance' ? (
+                  <div className="mt-6 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                    <FinanceTracker />
+                  </div>
+                ) : activeView === 'tax' ? (
+                  <div className="mt-6 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                    <TaxDashboard taxSettings={taxSettings} onSaveSettings={saveTaxSettings} />
+                  </div>
+                ) : (
+                  <div className="mt-8 space-y-8 p-4">
+                    <ServiceManagement 
+                      serviceRates={serviceRates} 
+                      roomCount={rooms.length}
+                      onSaveServiceRate={saveServiceRate}
+                      onDeleteServiceRate={deleteServiceRate}
+                      rooms={rooms}
+                    />
+                    <UsageReport 
+                      bills={bills} 
+                      rooms={rooms} 
+                      serviceRates={serviceRates}
+                    />
+                  </div>
+                )}
               </div>
             </div>
-          )}
 
-        <div className="flex flex-wrap gap-3 mb-8">
-          <button
-            onClick={() => setIsAddRoomModalOpen(true)}
-            className="inline-flex items-center rounded-md border border-transparent bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            + Thêm phòng mới
-          </button>
-          <button
-            onClick={() => setIsBatchBillingOpen(true)}
-            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            Tính tiền nhanh
-          </button>
-          <button
-            onClick={() => setIsReconciliationModalOpen(true)}
-            className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          >
-            Đối soát điện
-          </button>
-        </div>
-
-        <div className="mt-8">
-          <div className="mb-4 border-b border-gray-200 bg-white/90 backdrop-blur-sm rounded-t-xl px-4 pt-2">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveView('rooms')}
-                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeView === 'rooms'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                Danh sách phòng
-              </button>
-              <button
-                onClick={() => setActiveView('tenants')}
-                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeView === 'tenants'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                Tất cả khách thuê
-              </button>
-              <button
-                onClick={() => setActiveView('finance')}
-                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeView === 'finance'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                Cá Nhân (Lương & OT)
-              </button>
-              <button
-                onClick={() => setActiveView('tax')}
-                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeView === 'tax'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                Hồ Sơ Thuế & Lợi Nhuận
-              </button>
-              <button
-                onClick={() => setActiveView('services')}
-                className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeView === 'services'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                Dịch Vụ & Báo Cáo
-              </button>
-            </nav>
-          </div>
-
-          {activeView === 'rooms' ? (
-            <RoomList rooms={rooms} tenants={tenants} onRoomClick={handleRoomClick} />
-          ) : activeView === 'tenants' ? (
-            <div>
-              <FinancialOverview
-                bills={bills}
-                rooms={rooms}
+            {selectedRoom && (
+              <RoomDetailModal
+                key={selectedRoom.id}
+                isOpen={isRoomDetailModalOpen}
+                onClose={handleCloseModal}
+                room={selectedRoom}
+                initialEditingBill={targetBillToEdit}
+                initialActiveTab={targetBillToEdit ? 'bill' : roomActiveTab}
                 tenants={tenants}
-                taxSettings={taxSettings}
-                onEditBill={handleEditBillFromHistory}
-                onDeleteBill={handleDeleteBill}
-              />
-              <div className="mt-8 bg-white rounded-lg shadow overflow-hidden">
-                <TenantList
-                  tenants={tenants}
-                  rooms={rooms}
-                  onUpdateTenant={handleUpdateTenant}
-                  onRemoveTenant={handleRemoveTenant}
-                />
-              </div>
-            </div>
-          ) : activeView === 'finance' ? (
-            <div className="mt-6">
-              <FinanceTracker />
-            </div>
-          ) : activeView === 'tax' ? (
-            <div className="mt-6">
-              <TaxDashboard taxSettings={taxSettings} onSaveSettings={saveTaxSettings} />
-            </div>
-          ) : (
-            <div className="mt-8 space-y-8">
-              <ServiceManagement 
-                serviceRates={serviceRates} 
-                roomCount={rooms.length}
-                onSaveServiceRate={saveServiceRate}
-                onDeleteServiceRate={deleteServiceRate}
-                rooms={rooms}
-              />
-              <UsageReport 
-                bills={bills} 
-                rooms={rooms} 
+                bills={bills}
+                assets={assets}
                 serviceRates={serviceRates}
+                onUpdateRoom={handleUpdateRoom}
+                onDeleteRoom={deleteRoom}
+                onUpdateTenant={handleUpdateTenant}
+                onAddTenant={handleAddTenant}
+                onRemoveTenant={handleRemoveTenant}
+                onSaveBill={handleSaveBill}
+                onUpdateBill={handleUpdateBill}
+                onDeleteBill={handleDeleteBill}
+                onAddAsset={handleAddAsset}
+                onUpdateAsset={handleUpdateAsset}
+                onDeleteAsset={handleDeleteAsset}
               />
-            </div>
-          )}
+            )}
+
+            <BatchBillingModal
+              isOpen={isBatchBillingOpen}
+              onClose={() => setIsBatchBillingOpen(false)}
+              rooms={rooms}
+              tenants={tenants}
+              bills={bills}
+              serviceRates={serviceRates}
+              onSaveBills={handleBatchSaveBills}
+            />
+
+            <ElectricityReconciliationModal
+              isOpen={isReconciliationModalOpen}
+              onClose={() => setIsReconciliationModalOpen(false)}
+              bills={bills}
+              rooms={rooms}
+            />
+
+            <AddRoomModal
+              isOpen={isAddRoomModalOpen}
+              onClose={() => setIsAddRoomModalOpen(false)}
+              onSave={async (roomData) => {
+                const newRoom: Room = {
+                  id: crypto.randomUUID(),
+                  roomNumber: roomData.roomNumber!,
+                  price: roomData.price!,
+                  status: roomData.status as any,
+                  tenantIds: []
+                };
+                await saveRoom(newRoom);
+              }}
+            />
+
+            <DataMigrationModal />
+          </div>
         </div>
-
-        {selectedRoom && (
-          <RoomDetailModal
-            key={selectedRoom.id}
-            isOpen={isRoomDetailModalOpen}
-            onClose={handleCloseModal}
-            room={selectedRoom}
-            initialEditingBill={targetBillToEdit}
-            initialActiveTab={targetBillToEdit ? 'bill' : roomActiveTab}
-            tenants={tenants}
-            bills={bills}
-            assets={assets}
-            serviceRates={serviceRates}
-            onUpdateRoom={handleUpdateRoom}
-            onDeleteRoom={deleteRoom}
-            onUpdateTenant={handleUpdateTenant}
-            onAddTenant={handleAddTenant}
-            onRemoveTenant={handleRemoveTenant}
-            onSaveBill={handleSaveBill}
-            onUpdateBill={handleUpdateBill}
-            onDeleteBill={handleDeleteBill}
-            onAddAsset={handleAddAsset}
-            onUpdateAsset={handleUpdateAsset}
-            onDeleteAsset={handleDeleteAsset}
-          />
-        )}
-
-        <BatchBillingModal
-          isOpen={isBatchBillingOpen}
-          onClose={() => setIsBatchBillingOpen(false)}
-          rooms={rooms}
-          tenants={tenants}
-          bills={bills}
-          serviceRates={serviceRates}
-          onSaveBills={handleBatchSaveBills}
-        />
-
-        <ElectricityReconciliationModal
-          isOpen={isReconciliationModalOpen}
-          onClose={() => setIsReconciliationModalOpen(false)}
-          bills={bills}
-          rooms={rooms}
-        />
-
-        <AddRoomModal
-          isOpen={isAddRoomModalOpen}
-          onClose={() => setIsAddRoomModalOpen(false)}
-          onSave={async (roomData) => {
-            const newRoom: Room = {
-              id: crypto.randomUUID(),
-              roomNumber: roomData.roomNumber!,
-              price: roomData.price!,
-              status: roomData.status as any,
-              tenantIds: []
-            };
-            await saveRoom(newRoom);
-          }}
-        />
-
-        <DataMigrationModal />
       </div>
     </main>
   );

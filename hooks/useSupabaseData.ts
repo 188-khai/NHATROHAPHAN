@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import { Room, Tenant, Bill, Asset, TaxSettings, ServiceRate } from "@/types";
+import { Room, Tenant, Bill, Asset, TaxSettings, ServiceRate, UserProfile, ActivityLog } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 
 // Mappers to convert DB (snake_case) <-> App (camelCase)
@@ -151,6 +151,25 @@ const mapTaxSettingsToDB = (settings: TaxSettings) => ({
     updated_at: settings.updatedAt
 });
 
+const mapProfileFromDB = (data: any): UserProfile => ({
+    id: data.id,
+    fullName: data.full_name,
+    phone: data.phone,
+    boardingHouseName: data.boarding_house_name,
+    email: data.email,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
+});
+
+const mapLogFromDB = (data: any): ActivityLog => ({
+    id: data.id,
+    userId: data.user_id,
+    type: data.type,
+    message: data.message,
+    metadata: data.metadata,
+    createdAt: data.created_at
+});
+
 export function useSupabaseData() {
     const { user } = useAuth();
 
@@ -160,6 +179,8 @@ export function useSupabaseData() {
     const [assets, setAssets] = useState<Asset[]>([]);
     const [taxSettings, setTaxSettings] = useState<TaxSettings | null>(null);
     const [serviceRates, setServiceRates] = useState<ServiceRate[]>([]);
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Helper to sort rooms numerically (e.g. "P.10" < "P.2")
@@ -181,13 +202,15 @@ export function useSupabaseData() {
             if (isInitial) setLoading(true);
             try {
                 if (!supabase) return;
-                const [roomsRes, tenantsRes, billsRes, assetsRes, taxRes, serviceRatesRes] = await Promise.all([
+                const [roomsRes, tenantsRes, billsRes, assetsRes, taxRes, serviceRatesRes, profileRes, logsRes] = await Promise.all([
                     supabase.from("rooms").select("*").order('room_number', { ascending: true }),
                     supabase.from("tenants").select("*"),
                     supabase.from("bills").select("*"),
                     supabase.from("assets").select("*"),
                     supabase.from("tax_settings").select("*").order("year", { ascending: false }).limit(1),
                     supabase.from("service_rates").select("*"),
+                    supabase.from("profiles").select("*").single(),
+                    supabase.from("activity_logs").select("*").order("created_at", { ascending: false }).limit(20),
                 ]);
 
                 if (roomsRes.data) {
@@ -199,6 +222,8 @@ export function useSupabaseData() {
                 if (assetsRes.data) setAssets(assetsRes.data.map(mapAssetFromDB));
                 if (taxRes.data && taxRes.data.length > 0) setTaxSettings(mapTaxSettingsFromDB(taxRes.data[0]));
                 if (serviceRatesRes && serviceRatesRes.data) setServiceRates(serviceRatesRes.data.map(mapServiceRateFromDB));
+                if (profileRes.data) setProfile(mapProfileFromDB(profileRes.data));
+                if (logsRes.data) setActivityLogs(logsRes.data.map(mapLogFromDB));
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -284,7 +309,21 @@ export function useSupabaseData() {
                 return;
             }
             setBills(prev => [...prev, bill]);
+            // Log activity
+            const room = rooms.find(r => r.id === bill.roomId);
+            await saveLog('bill_created', `Đã xuất hóa đơn cho phòng ${room?.roomNumber || bill.roomId} vào ngày ${new Date(bill.date).toLocaleDateString('vi-VN')}`);
         }
+    };
+
+    const saveLog = async (type: string, message: string, metadata: any = {}) => {
+        if (!supabase || !user) return;
+        const { error } = await supabase.from("activity_logs").insert({
+            user_id: user.id,
+            type,
+            message,
+            metadata
+        });
+        if (error) console.error("Error saving log:", error);
     };
 
     const saveBills = async (newBills: Bill[]) => {
@@ -300,6 +339,11 @@ export function useSupabaseData() {
         // Fetches fresh to ensure sync
         const { data } = await supabase.from("bills").select("*");
         if (data) setBills(data.map(mapBillFromDB));
+        
+        // Log activity
+        if (newBills.length > 0) {
+            await saveLog('batch_bills_created', `Đã xuất hóa đơn hàng loạt cho ${newBills.length} phòng`);
+        }
     };
 
     const deleteBill = async (id: string) => {
@@ -368,6 +412,8 @@ export function useSupabaseData() {
         assets,
         taxSettings,
         serviceRates,
+        profile,
+        activityLogs,
         loading,
         saveRoom,
         deleteRoom,
@@ -380,6 +426,7 @@ export function useSupabaseData() {
         deleteAsset,
         saveTaxSettings,
         saveServiceRate,
-        deleteServiceRate
+        deleteServiceRate,
+        saveLog
     };
 }

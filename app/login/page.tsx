@@ -11,6 +11,9 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isSignUp, setIsSignUp] = useState(false);
+    const [fullName, setFullName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [boardingHouseName, setBoardingHouseName] = useState("");
     const [message, setMessage] = useState<string | null>(null);
     const router = useRouter();
 
@@ -28,11 +31,23 @@ export default function LoginPage() {
 
         try {
             if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                 });
-                if (error) throw error;
+                if (signUpError) throw signUpError;
+                
+                if (signUpData.user) {
+                    const { error: profileError } = await supabase.from("profiles").insert({
+                        id: signUpData.user.id,
+                        full_name: fullName,
+                        phone: phone,
+                        boarding_house_name: boardingHouseName,
+                        email: email
+                    });
+                    if (profileError) throw profileError;
+                }
+
                 setMessage("Đăng ký thành công! Bạn có thể đăng nhập ngay.");
                 setIsSignUp(false);
             } else {
@@ -77,6 +92,44 @@ export default function LoginPage() {
                                 />
                             </div>
                         </div>
+                        
+                        {isSignUp && (
+                            <>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">Họ và tên</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                        placeholder="Nguyễn Văn A"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">Số điện thoại</label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                        placeholder="090xxxxxxx"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">Tên nhà trọ</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={boardingHouseName}
+                                        onChange={(e) => setBoardingHouseName(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                        placeholder="Nhà Trọ Hạnh Phúc"
+                                    />
+                                </div>
+                            </>
+                        )}
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700">Mật khẩu</label>

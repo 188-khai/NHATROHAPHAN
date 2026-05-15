@@ -122,3 +122,22 @@ export interface TaxSettings {
     createdAt: string;
     updatedAt: string;
 }
+
+export interface UserProfile {
+    id: string;
+    fullName: string;
+    phone: string;
+    boardingHouseName: string;
+    email: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface ActivityLog {
+    id: string;
+    userId: string;
+    type: string;
+    message: string;
+    metadata?: any;
+    createdAt: string;
+}
