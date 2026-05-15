@@ -1,6 +1,7 @@
 import { Fragment, useState, useEffect, useRef } from 'react';
 import { Room, Tenant, Bill, RoomStatus, Asset, ServiceRate } from '../types';
 import { calculateBill, formatCurrency } from '../utils/calculations';
+import CurrencyInput from './CurrencyInput';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, Plus, Trash2, Pencil, CalendarDays, Camera, RefreshCw, Eye, ChevronUp, ChevronDown, Upload } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -526,15 +527,10 @@ export default function RoomDetailModal({
                                                     </div>
                                                     <div>
                                                         <label htmlFor="room-price" className="block text-sm font-medium text-gray-700">Giá phòng</label>
-                                                        <input
+                                                        <CurrencyInput
                                                             id="room-price"
-                                                            type="text"
-                                                            value={editedRoom.price ? new Intl.NumberFormat('de-DE').format(editedRoom.price) : ''}
-                                                            onChange={(e) => {
-                                                                const rawValue = e.target.value.replace(/\D/g, '');
-                                                                const numValue = rawValue ? parseInt(rawValue, 10) : 0;
-                                                                setEditedRoom({ ...editedRoom, price: numValue });
-                                                            }}
+                                                            value={editedRoom.price}
+                                                            onChangeValue={(val) => setEditedRoom({ ...editedRoom, price: val })}
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-black"
                                                         />
                                                     </div>

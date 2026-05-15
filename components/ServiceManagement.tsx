@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, Tag, CheckCircle2, Home } from 'lucide-react';
 import { ServiceRate, ServiceUnit, Room } from '../types';
+import CurrencyInput from './CurrencyInput';
 import { formatCurrency } from '../utils/calculations';
 
 interface ServiceManagementProps {
@@ -186,11 +187,10 @@ export default function ServiceManagement({
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Đơn giá (VNĐ)</label>
-                                    <input
-                                        type="number"
+                                    <CurrencyInput
                                         placeholder="50000"
-                                        value={formAmount === 0 ? '' : formAmount}
-                                        onChange={(e) => setFormAmount(Number(e.target.value))}
+                                        value={formAmount}
+                                        onChangeValue={setFormAmount}
                                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-black"
                                     />
                                 </div>

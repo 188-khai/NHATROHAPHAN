@@ -172,13 +172,19 @@ export default function Home() {
                 const confirm = window.confirm("Bạn có chắc chắn muốn tạo dữ liệu mẫu không?");
                 if (!confirm) return;
 
+                const idMap = new Map();
                 // Batch insert rooms
                 for (const room of initialRooms) {
-                  await saveRoom(room);
+                  const newId = crypto.randomUUID();
+                  idMap.set(room.id, newId);
+                  await saveRoom({ ...room, id: newId });
                 }
                 // Batch insert assets
                 for (const asset of initialAssets) {
-                  await saveAsset(asset);
+                  const newRoomId = idMap.get(asset.roomId);
+                  if (newRoomId) {
+                    await saveAsset({ ...asset, id: crypto.randomUUID(), roomId: newRoomId });
+                  }
                 }
                 window.location.reload();
               }}

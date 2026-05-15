@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
 import { Room } from '../types';
+import CurrencyInput from './CurrencyInput';
 
 interface AddRoomModalProps {
     isOpen: boolean;
@@ -106,11 +107,10 @@ export default function AddRoomModal({ isOpen, onClose, onSave }: AddRoomModalPr
                                                         Giá Phòng (VNĐ/tháng)
                                                     </label>
                                                     <div className="mt-1">
-                                                        <input
-                                                            type="number"
+                                                        <CurrencyInput
                                                             id="price"
                                                             value={price}
-                                                            onChange={(e) => setPrice(Number(e.target.value))}
+                                                            onChangeValue={setPrice}
                                                             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-black"
                                                             required
                                                         />

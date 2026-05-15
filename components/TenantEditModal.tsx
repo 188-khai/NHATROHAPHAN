@@ -3,6 +3,7 @@ import { Fragment, useState, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, Upload } from 'lucide-react';
 import { Tenant } from '../types';
+import CurrencyInput from './CurrencyInput';
 
 interface TenantEditModalProps {
     isOpen: boolean;
@@ -98,14 +99,9 @@ export default function TenantEditModal({
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Tiền cọc</label>
-                                            <input
-                                                type="text"
-                                                value={editedTenant.deposit ? new Intl.NumberFormat('de-DE').format(editedTenant.deposit) : ''}
-                                                onChange={(e) => {
-                                                    const rawValue = e.target.value.replace(/\D/g, '');
-                                                    const numValue = rawValue ? parseInt(rawValue, 10) : 0;
-                                                    setEditedTenant({ ...editedTenant, deposit: numValue });
-                                                }}
+                                            <CurrencyInput
+                                                value={editedTenant.deposit}
+                                                onChangeValue={(val) => setEditedTenant({ ...editedTenant, deposit: val })}
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-black"
                                             />
                                         </div>
